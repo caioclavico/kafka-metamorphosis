@@ -1,4 +1,4 @@
-(defproject kafka-metamorphosis "0.1.0-SNAPSHOT"
+(defproject org.clojars.caioclavico/kafka-metamorphosis "0.1.0-SNAPSHOT"
   :description "A comprehensive Clojure wrapper that transforms the Java Kafka APIs into an elegant, idiomatic Clojure interface"
   :url "https://github.com/caioclavico/kafka-metamorphosis"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
@@ -30,6 +30,7 @@
                  
   :main ^:skip-aot kafka-metamorphosis.core
   :target-path "target/%s"
+  :aot [kafka-metamorphosis.core]
   
   :profiles {:uberjar {:aot :all
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}

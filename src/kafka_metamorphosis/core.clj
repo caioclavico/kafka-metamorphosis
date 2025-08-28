@@ -7,6 +7,7 @@
    
    Just as Gregor Samsa underwent his transformation, this library 
    metamorphoses the complex Java Kafka APIs into elegant Clojure functions."
+  (:gen-class)
   (:require [kafka-metamorphosis.producer :as producer]
             [kafka-metamorphosis.consumer :as consumer]
             [kafka-metamorphosis.admin :as admin]

@@ -2,6 +2,26 @@
 
 ![Kafka Metamorphosis](docs/images/kafka-metamorphosis.jpg)
 
+## 📦 Installation
+
+Add this to your `project.clj` dependencies:
+
+```clojure
+[org.clojars.caioclavico/kafka-metamorphosis "0.1.0-SNAPSHOT"]
+```
+
+Or for deps.edn:
+
+```clojure
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}
+```
+
+For tools.deps CLI:
+
+```clojure
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}'
+```
+
 _"When Gregor Samsa woke up one morning from unsettling dreams, he found himself changed in his bed into a monstrous vermin."_  
 — Franz Kafka, The Metamorphosis
 
@@ -21,18 +41,18 @@ Kafka Metamorphosis is a comprehensive Clojure wrapper that transforms the Java 
 - 🛡️ **Error Handling** - Proper exception handling with meaningful messages
 - 📊 **Health Checks** - Built-in cluster monitoring and diagnostics
 
-## Installation
+## 📦 Installation
 
-Add the following dependency to your `project.clj`:
+Add this to your `project.clj` dependencies:
 
 ```clojure
-[kafka-metamorphosis "0.1.0-SNAPSHOT"]
+[org.clojars.caioclavico/kafka-metamorphosis "0.1.0-SNAPSHOT"]
 ```
 
 Or for deps.edn:
 
 ```clojure
-{:deps {kafka-metamorphosis/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}
 ```
 
 For tools.deps CLI:
