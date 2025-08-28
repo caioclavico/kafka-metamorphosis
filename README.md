@@ -32,7 +32,13 @@ Add the following dependency to your `project.clj`:
 Or for deps.edn:
 
 ```clojure
-kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}
+{:deps {kafka-metamorphosis/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}
+```
+
+For tools.deps CLI:
+
+```clojure
+clj -Sdeps '{:deps {kafka-metamorphosis/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}'
 ```
 
 ## Documentation

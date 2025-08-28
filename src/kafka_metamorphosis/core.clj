@@ -82,7 +82,7 @@
    (consumer-config \"my-group\" {} string-deserializers) ; Custom deserializers
    (consumer-config \"kafka:9092\" \"my-group\" {} json-deserializers) ; JSON deserializers"
   ([group-id]
-   (consumer-config group-id {} serializers/string-deserializers))
+   (consumer-config default-bootstrap-servers group-id {} serializers/string-deserializers))
   ([group-id overrides]
    (consumer-config default-bootstrap-servers group-id overrides serializers/string-deserializers))
   ([bootstrap-servers group-id overrides]
@@ -107,7 +107,7 @@
    (json-consumer-config \"my-group\" {:auto-offset-reset \"latest\"}) ; Override settings
    (json-consumer-config \"kafka:9092\" \"my-group\" {}) ; Custom broker + group"
   ([group-id]
-   (consumer-config group-id {} serializers/simple-json-deserializers))
+   (consumer-config default-bootstrap-servers group-id {} serializers/simple-json-deserializers))
   ([group-id overrides]
    (consumer-config default-bootstrap-servers group-id overrides serializers/simple-json-deserializers))
   ([bootstrap-servers group-id overrides]

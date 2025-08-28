@@ -1,7 +1,11 @@
 (ns kafka-metamorphosis.exemples.topic-examples
   "Examples for topic management with Kafka Metamorphosis"
-  (:require [kafka-metamorphosis.admin :as admin]
-            [kafka-metamorphosis.dev :as dev]))
+  (:require [kafka-metamorphosis.admin :as admin]))
+
+(defn quick-admin 
+  "Create a quick admin client for examples"
+  []
+  (admin/create-admin-client {"bootstrap.servers" "localhost:9092"}))
 
 (defn basic-topic-creation-example
   "Example of basic topic creation"
@@ -9,7 +13,7 @@
   (println "🪲 Creating Topics Example")
   (println "=========================")
   
-  (let [admin-client (dev/quick-admin)]
+  (let [admin-client (quick-admin)]
     (try
       ;; Create a simple topic
       (println "\n1. Creating a simple topic...")
@@ -53,7 +57,7 @@
   (println "🪲 Topic Management Workflow")
   (println "============================")
   
-  (let [admin-client (dev/quick-admin)
+  (let [admin-client (quick-admin)
         topic-name "workflow-demo-topic"]
     (try
       ;; Step 1: Check if topic exists
@@ -97,7 +101,7 @@
   []
   (println "🪲 Cleaning up example topics...")
   
-  (let [admin-client (dev/quick-admin)
+  (let [admin-client (quick-admin)
         example-topics ["simple-topic" 
                        "multi-partition-topic" 
                        "compacted-topic" 
@@ -124,11 +128,19 @@
   ;; 3. Run the management workflow
   (topic-management-workflow)
   
-  ;; 4. List topics using dev utilities
-  (dev/list-all-topics)
+  ;; 4. List all topics directly
+  (let [admin-client (quick-admin)]
+    (try
+      (admin/list-topics admin-client)
+      (finally
+        (admin/close! admin-client))))
   
   ;; 5. Describe a specific topic
-  (dev/describe-dev-topic "multi-partition-topic")
+  (let [admin-client (quick-admin)]
+    (try
+      (admin/describe-topic admin-client "multi-partition-topic")
+      (finally
+        (admin/close! admin-client))))
   
   ;; 6. Clean up when done (optional)
   (cleanup-example-topics)
