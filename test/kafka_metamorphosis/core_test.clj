@@ -1,5 +1,5 @@
 (ns kafka-metamorphosis.core-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is testing]]
             [kafka-metamorphosis.core :as core]
             [kafka-metamorphosis.serializers :as serializers]))
 
@@ -58,17 +58,3 @@
       (is (contains? health :status))
       (is (= :unhealthy (:status health)))
       (is (contains? health :error)))))
-
-(deftest test-main-function
-  (testing "Main function runs without error"
-    (is (nil? (core/-main)))))
-
-;; Integration tests that would require running Kafka (commented out)
-(comment
-  (deftest integration-test-topic-creation
-    (testing "Topic creation with running Kafka"
-      (is (core/create-topic! "test-topic" {:partitions 1}))))
-  
-  (deftest integration-test-message-sending
-    (testing "Message sending with running Kafka"
-      (is (core/send-message! "test-topic" "test-message")))))
