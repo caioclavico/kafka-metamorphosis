@@ -1,59 +1,59 @@
 #!/bin/bash
-# Script automatizado para deploy no Clojars
+# Automated script for Clojars deployment
 # Execute: ./deploy.sh
 
-set -e  # Parar em caso de erro
+set -e  # Stop on error
 
-echo "🪲 Kafka Metamorphosis - Deploy para Clojars"
-echo "=============================================="
+echo "🪲 Kafka Metamorphosis - Deploy to Clojars"
+echo "============================================"
 
-# Verificar se as variáveis de ambiente estão configuradas
+# Check if environment variables are configured
 if [ -z "$CLOJARS_USERNAME" ] || [ -z "$CLOJARS_PASSWORD" ]; then
-    echo "❌ Erro: Variáveis de ambiente não configuradas"
-    echo "Execute primeiro: source deploy-setup.sh"
+    echo "❌ Error: Environment variables not configured"
+    echo "Execute first: source deploy-setup.sh"
     exit 1
 fi
 
-echo "✅ Credenciais Clojars encontradas para: $CLOJARS_USERNAME"
+echo "✅ Clojars credentials found for: $CLOJARS_USERNAME"
 
-# 1. Verificar sintaxe do projeto
+# 1. Check project syntax
 echo ""
-echo "🔍 1. Verificando sintaxe do projeto..."
+echo "🔍 1. Checking project syntax..."
 lein check
 
-# 2. Executar testes
+# 2. Run tests
 echo ""
-echo "🧪 2. Executando testes..."
+echo "🧪 2. Running tests..."
 lein test
 
-# 3. Limpar builds anteriores
+# 3. Clean previous builds
 echo ""
-echo "🧹 3. Limpando builds anteriores..."
+echo "🧹 3. Cleaning previous builds..."
 lein clean
 
-# 4. Compilar projeto
+# 4. Compile project
 echo ""
-echo "🔨 4. Compilando projeto..."
+echo "🔨 4. Compiling project..."
 lein compile
 
-# 5. Confirmar deploy
+# 5. Confirm deployment
 echo ""
-echo "🚀 5. Pronto para deploy!"
-echo "Versão atual: $(grep defproject project.clj | cut -d'"' -f4)"
+echo "🚀 5. Ready for deployment!"
+echo "Current version: $(grep defproject project.clj | cut -d'"' -f4)"
 echo ""
-read -p "Confirma deploy para Clojars? (y/N): " confirm
+read -p "Confirm deployment to Clojars? (y/N): " confirm
 
 if [[ $confirm =~ ^[Yy]$ ]]; then
     echo ""
-    echo "📤 Fazendo deploy para Clojars..."
+    echo "📤 Deploying to Clojars..."
     lein deploy clojars
     
     echo ""
-    echo "🎉 Deploy concluído com sucesso!"
-    echo "📋 Biblioteca disponível em: https://clojars.org/kafka-metamorphosis"
-    echo "📦 Para usar:"
-    echo "   [kafka-metamorphosis \"$(grep defproject project.clj | cut -d'"' -f4)\"]"
+    echo "🎉 Deployment completed successfully!"
+    echo "📋 Library available at: https://clojars.org/org.clojars.caioclavico/kafka-metamorphosis"
+    echo "📦 To use:"
+    echo "   [org.clojars.caioclavico/kafka-metamorphosis \"$(grep defproject project.clj | cut -d'"' -f4)\"]"
 else
-    echo "❌ Deploy cancelado pelo usuário"
+    echo "❌ Deployment cancelled by user"
     exit 1
 fi

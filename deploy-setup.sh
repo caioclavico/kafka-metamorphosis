@@ -1,30 +1,30 @@
 #!/bin/bash
-# Script para configurar deploy no Clojars
+# Script to configure Clojars deployment
 # Execute: source deploy-setup.sh
 
-echo "🚀 Configurando ambiente para deploy no Clojars..."
+echo "🚀 Setting up environment for Clojars deployment..."
 
-# Solicitar credenciais do usuário
-read -p "Digite seu username do Clojars (caioclavico): " username
+# Request user credentials
+read -p "Enter your Clojars username (caioclavico): " username
 username=${username:-caioclavico}
 
-read -s -p "Digite seu deploy token do Clojars: " token
+read -s -p "Enter your Clojars deploy token: " token
 echo
 
-# Exportar variáveis de ambiente
+# Export environment variables
 export CLOJARS_USERNAME="$username"
 export CLOJARS_PASSWORD="$token"
 
-echo "✅ Variáveis de ambiente configuradas:"
+echo "✅ Environment variables configured:"
 echo "   CLOJARS_USERNAME: $username"
 echo "   CLOJARS_PASSWORD: ****"
 echo ""
-echo "📋 Comandos disponíveis:"
-echo "   lein check          # Verificar projeto"
-echo "   lein test           # Executar testes"
-echo "   lein deploy clojars # Deploy para Clojars"
+echo "📋 Available commands:"
+echo "   lein check          # Check project"
+echo "   lein test           # Run tests"
+echo "   lein deploy clojars # Deploy to Clojars"
 echo ""
-echo "🎯 Para fazer deploy:"
+echo "🎯 To deploy:"
 echo "   1. lein check"
 echo "   2. lein test"
 echo "   3. lein deploy clojars"

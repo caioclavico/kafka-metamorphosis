@@ -1,123 +1,123 @@
-# Kafka com Docker - Guia de Desenvolvimento
+# Kafka with Docker - Development Guide
 
-## 🐳 Configuração Rápida com Docker
+## 🐳 Quick Setup with Docker
 
-O Kafka Metamorphosis inclui funções utilitárias para facilitar o desenvolvimento local usando Docker com **3 arquiteturas diferentes**:
+Kafka Metamorphosis includes utility functions to facilitate local development using Docker with **3 different architectures**:
 
-### 🏗️ Escolha sua Arquitetura
+### 🏗️ Choose Your Architecture
 
-#### **🆕 KRaft Mode (Recomendado) - Kafka sem Zookeeper**
+#### **🆕 KRaft Mode (Recommended) - Kafka without Zookeeper**
 
 ```clojure
 (require '[kafka-metamorphosis.dev :as dev])
 
-;; Setup completo com KRaft (moderno, mais rápido)
+;; Complete setup with KRaft (modern, faster)
 (dev/kafka-setup-kraft!)
 
-;; Ou apenas subir o Kafka
+;; Or just start Kafka
 (dev/kafka-up-kraft!)
 ```
 
-#### **⚡ Simple KRaft (Mais Rápido) - Minimal**
+#### **⚡ Simple KRaft (Fastest) - Minimal**
 
 ```clojure
-;; Setup minimalista (sem UI, super rápido)
+;; Minimalist setup (no UI, super fast)
 (dev/kafka-setup-simple!)
 
-;; Ou apenas subir o Kafka
+;; Or just start Kafka
 (dev/kafka-up-simple!)
 ```
 
 #### **🏛️ Traditional Mode - Kafka + Zookeeper**
 
 ```clojure
-;; Setup tradicional com Zookeeper
+;; Traditional setup with Zookeeper
 (dev/kafka-setup-zookeeper!)
 
-;; Ou apenas subir o Kafka
+;; Or just start Kafka
 (dev/kafka-up-zookeeper!)
 ```
 
-### 🚀 Setup Genérico
+### 🚀 Generic Setup
 
 ```clojure
-;; Método genérico - escolha o modo
-(dev/kafka-dev-setup!)                    ; Padrão: Zookeeper
+;; Generic method - choose the mode
+(dev/kafka-dev-setup!)                    ; Default: Zookeeper
 (dev/kafka-dev-setup! :kraft)             ; KRaft mode
 (dev/kafka-dev-setup! :simple)            ; Simple KRaft
-(dev/kafka-dev-setup! :kraft ["my-topic"]) ; KRaft com tópicos customizados
+(dev/kafka-dev-setup! :kraft ["my-topic"]) ; KRaft with custom topics
 ```
 
-### 📊 Comparação dos Modos
+### 📊 Mode Comparison
 
-| Modo          | Containers            | Startup   | UI  | Zookeeper | Uso                      |
+| Mode          | Containers            | Startup   | UI  | Zookeeper | Usage                    |
 | ------------- | --------------------- | --------- | --- | --------- | ------------------------ |
-| **KRaft**     | 2 (Kafka + UI)        | Médio     | ✅  | ❌        | Desenvolvimento completo |
-| **Simple**    | 1 (Kafka)             | ⚡ Rápido | ❌  | ❌        | Testes rápidos           |
-| **Zookeeper** | 3 (Zook + Kafka + UI) | Lento     | ✅  | ✅        | Compatibilidade legacy   |
+| **KRaft**     | 2 (Kafka + UI)        | Medium    | ✅  | ❌       | Complete development     |
+| **Simple**    | 1 (Kafka)             | Fast      | ❌  | ❌       | Quick tests              |
+| **Zookeeper** | 3 (Zook + Kafka + UI) | Slow      | ✅  | ✅       | Legacy compatibility     |
 
-### 🔧 Controle Manual
+### 🔧 Manual Control
 
 ```clojure
-;; Subir Kafka
+;; Start Kafka
 (dev/kafka-docker-up!)
 
-;; Aguardar ficar pronto
+;; Wait for it to be ready
 (dev/wait-for-kafka)
 
-;; Verificar status
+;; Check status
 (dev/kafka-docker-status)
 
-;; Ver logs
+;; View logs
 (dev/kafka-docker-logs!)
-(dev/kafka-docker-logs! "kafka" true)  ; Seguir logs do Kafka
+(dev/kafka-docker-logs! "kafka" true)  ; Follow Kafka logs
 
-;; Reiniciar serviços
+;; Restart services
 (dev/kafka-docker-restart!)
 
-;; Parar serviços
+;; Stop services
 (dev/kafka-docker-down!)
 
-;; Parar e remover volumes (limpa dados)
+;; Stop and remove volumes (cleans data)
 (dev/kafka-docker-down! true)
 ```
 
-### 🧹 Limpeza Completa
+### 🧹 Complete Cleanup
 
 ```clojure
-;; Parar tudo e manter dados
+;; Stop everything and keep data
 (dev/kafka-dev-teardown!)
 
-;; Parar tudo e remover dados
+;; Stop everything and remove data
 (dev/kafka-dev-teardown! true)
 ```
 
-## 📊 Serviços Incluídos
+## 📊 Included Services
 
 ### Kafka Broker
 
-- **Porta**: 9092 (principal)
-- **Porta alternativa**: 29092
-- **Endereço**: `localhost:9092`
+- **Port**: 9092 (main)
+- **Alternative port**: 29092
+- **Address**: `localhost:9092`
 
 ### Zookeeper
 
-- **Porta**: 2181
-- **Endereço**: `localhost:2181`
+- **Port**: 2181
+- **Address**: `localhost:2181`
 
 ### Kafka UI
 
-- **Porta**: 8080
+- **Port**: 8080
 - **URL**: http://localhost:8080
-- **Funcionalidades**:
-  - Visualizar tópicos
-  - Monitorar mensagens
-  - Gerenciar consumidores
-  - Ver métricas
+- **Features**:
+  - View topics
+  - Monitor messages
+  - Manage consumers
+  - View metrics
 
-## 🐳 Docker Compose Gerado
+## 🐳 Generated Docker Compose
 
-O arquivo `docker-compose.yml` inclui:
+The `docker-compose.yml` file includes:
 
 ```yaml
 version: "3.8"
@@ -164,102 +164,102 @@ services:
 ### 1. Primeira vez / Setup inicial
 
 ```clojure
-;; Configurar ambiente completo
+;; Configure full environment
 (dev/kafka-dev-setup!)
 ```
 
-### 2. Desenvolvimento diário
+### 2. Daily development
 
 ```clojure
-;; Verificar se está rodando
+;; Check if it's running
 (dev/kafka-docker-status)
 
-;; Se não estiver, subir
+;; If not, start it
 (dev/kafka-docker-up!)
 
-;; Trabalhar com tópicos e mensagens...
-(dev/setup-dev-topic "meu-projeto")
-(dev/send-test-messages "meu-projeto" 10)
-(dev/read-test-messages "meu-projeto")
+;; Work with topics and messages...
+(dev/setup-dev-topic "my-project")
+(dev/send-test-messages "my-project" 10)
+(dev/read-test-messages "my-project")
 ```
 
 ### 3. Debug / Troubleshooting
 
 ```clojure
-;; Ver logs do Kafka
+;; View Kafka logs
 (dev/kafka-docker-logs! "kafka")
 
-;; Reiniciar se necessário
+;; Restart if necessary
 (dev/kafka-docker-restart! "kafka")
 
-;; Verificar se consegue conectar
+;; Check if can connect
 (dev/wait-for-kafka 30)
 ```
 
-### 4. Fim do trabalho
+### 4. End of work
 
 ```clojure
-;; Parar mas manter dados
+;; Stop but keep data
 (dev/kafka-docker-down!)
 
-;; Ou limpar tudo
+;; Or clean everything
 (dev/kafka-dev-teardown! true)
 ```
 
 ## 🐛 Troubleshooting
 
-### Kafka não sobe
+### Kafka won't start
 
 ```bash
-# Verificar se Docker está rodando
+# Check if Docker is running
 docker --version
 
-# Verificar portas ocupadas
-netstat -an | findstr ":9092"
+# Check occupied ports
+netstat -an | grep ":9092"
 ```
 
-### Logs de erro
+### Error logs
 
 ```clojure
-;; Ver todos os logs
+;; View all logs
 (dev/kafka-docker-logs!)
 
-;; Ver logs específicos
+;; View specific logs
 (dev/kafka-docker-logs! "kafka")
 (dev/kafka-docker-logs! "zookeeper")
 ```
 
-### Limpar estado corrompido
+### Clean corrupted state
 
 ```clojure
-;; Parar tudo e remover volumes
+;; Stop everything and remove volumes
 (dev/kafka-dev-teardown! true)
 
-;; Recriar do zero
+;; Recreate from scratch
 (dev/kafka-dev-setup!)
 ```
 
-## 🎯 Comandos Docker Manuais
+## 🎯 Manual Docker Commands
 
-Se precisar executar comandos Docker diretamente:
+If you need to run Docker commands directly:
 
 ```bash
-# Subir serviços
+# Start services
 docker-compose up -d
 
-# Ver status
+# View status
 docker-compose ps
 
-# Ver logs
+# View logs
 docker-compose logs kafka
 
-# Parar serviços
+# Stop services
 docker-compose down
 
-# Parar e remover volumes
+# Stop and remove volumes
 docker-compose down -v
 ```
 
-## 🦋 A Metamorfose Docker Está Completa!
+## 🦋 The Docker Metamorphosis is Complete!
 
-Com essas funções, você pode facilmente gerenciar um ambiente Kafka local para desenvolvimento, transformando a complexidade de configuração em simplicidade funcional! 🪲➡️🦋
+With these functions, you can easily manage a local Kafka environment for development, transforming configuration complexity into functional simplicity! 🪲➡️🦋

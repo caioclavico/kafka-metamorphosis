@@ -39,3 +39,5 @@ clojars-credentials.clj
 # Build artifacts
 figwheel_server.log
 .rebel_readline_history
+
+.lein-*

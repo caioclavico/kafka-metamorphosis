@@ -1,51 +1,51 @@
-# KRaft Mode - Kafka sem Zookeeper
+# KRaft Mode - Kafka without Zookeeper
 
-## 🆕 O que é KRaft?
+## 🆕 What is KRaft?
 
-KRaft (Kafka Raft) é a nova arquitetura do Apache Kafka que **elimina a dependência do Zookeeper**. Disponível desde Kafka 2.8 e estável desde 3.3.
+KRaft (Kafka Raft) is the new Apache Kafka architecture that **eliminates the Zookeeper dependency**. Available since Kafka 2.8 and stable since 3.3.
 
-### ✅ Vantagens do KRaft
+### ✅ KRaft Advantages
 
-- **🚀 Startup mais rápido** - Menos componentes para inicializar
-- **📦 Menos complexidade** - Um componente a menos para gerenciar
-- **🔧 Configuração simplificada** - Sem necessidade de configurar Zookeeper
-- **⚡ Melhor performance** - Metadata gerenciado diretamente pelo Kafka
-- **🎯 Futuro do Kafka** - Zookeeper será descontinuado
+- **🚀 Faster startup** - Fewer components to initialize
+- **📦 Less complexity** - One less component to manage
+- **🔧 Simplified configuration** - No need to configure Zookeeper
+- **⚡ Better performance** - Metadata managed directly by Kafka
+- **🎯 Future of Kafka** - Zookeeper will be discontinued
 
-### ❌ Limitações Atuais
+### ❌ Current Limitations
 
-- **🧪 Relativamente novo** - Menos tempo em produção
-- **📚 Menos documentação** - Comunidade ainda migrando
-- **🔌 Algumas ferramentas** - Podem ainda não suportar completamente
+- **🧪 Relatively new** - Less time in production
+- **📚 Less documentation** - Community still migrating
+- **🔌 Some tools** - May not fully support it yet
 
-## 🚀 Como Usar no Kafka Metamorphosis
+## 🚀 How to Use in Kafka Metamorphosis
 
-### Modo KRaft Completo
+### Complete KRaft Mode
 
 ```clojure
-;; Setup completo com KRaft + Kafka UI
+;; Complete setup with KRaft + Kafka UI
 (dev/kafka-setup-kraft!)
 
-;; Ou com tópicos específicos
+;; Or with specific topics
 (dev/kafka-setup-kraft! ["orders" "payments" "notifications"])
 
-;; Apenas subir sem criar tópicos
+;; Just start without creating topics
 (dev/kafka-up-kraft!)
 ```
 
-### Modo KRaft Simples (Recomendado para Testes)
+### Simple KRaft Mode (Recommended for Tests)
 
 ```clojure
-;; Setup minimalista - super rápido
+;; Minimalist setup - super fast
 (dev/kafka-setup-simple!)
 
-;; Apenas subir Kafka sem UI
+;; Just start Kafka without UI
 (dev/kafka-up-simple!)
 ```
 
-## 🏗️ Arquitetura KRaft vs Zookeeper
+## 🏗️ KRaft vs Zookeeper Architecture
 
-### Tradicional (Zookeeper)
+### Traditional (Zookeeper)
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -74,9 +74,9 @@ KRaft (Kafka Raft) é a nova arquitetura do Apache Kafka que **elimina a depend�
 └─────────────┘
 ```
 
-## ⚙️ Configurações Geradas
+## ⚙️ Generated Configurations
 
-### KRaft Completo (`kraft-docker-compose`)
+### Complete KRaft (`kraft-docker-compose`)
 
 ```yaml
 services:
@@ -86,13 +86,13 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:29093"
-      # ... sem Zookeeper
+      # ... without Zookeeper
 
   kafka-ui:
-    # Interface web em localhost:8080
+    # Web interface at localhost:8080
 ```
 
-### KRaft Simples (`kraft-simple-docker-compose`)
+### Simple KRaft (`kraft-simple-docker-compose`)
 
 ```yaml
 services:
@@ -102,100 +102,100 @@ services:
       - "9092:9092"
     environment:
       KAFKA_PROCESS_ROLES: "broker,controller"
-      # ... configuração minimal
+      # ... minimal configuration
 ```
 
-## 🛠️ Workflow Recomendado
+## 🛠️ Recommended Workflow
 
-### Para Desenvolvimento Diário
+### For Daily Development
 
 ```clojure
-;; 1. Setup rápido para desenvolvimento
+;; 1. Quick setup for development
 (dev/kafka-setup-kraft!)
 
-;; 2. Usar normalmente
-(dev/send-test-messages "meu-topico" 5)
-(dev/read-test-messages "meu-topico")
+;; 2. Use normally
+(dev/send-test-messages "my-topic" 5)
+(dev/read-test-messages "my-topic")
 
-;; 3. Abrir UI no navegador: http://localhost:8080
+;; 3. Open UI in browser: http://localhost:8080
 
-;; 4. Parar quando terminar
+;; 4. Stop when finished
 (dev/kafka-dev-teardown!)
 ```
 
-### Para Testes Rápidos
+### For Quick Tests
 
 ```clojure
-;; 1. Setup minimalista (sem UI)
+;; 1. Minimalist setup (no UI)
 (dev/kafka-setup-simple!)
 
-;; 2. Testar rapidamente
+;; 2. Test quickly
 (dev/setup-dev-topic "test")
 (dev/send-test-messages "test" 3)
 
-;; 3. Parar
+;; 3. Stop
 (dev/kafka-dev-teardown!)
 ```
 
-## 🔧 Troubleshooting KRaft
+## 🔧 KRaft Troubleshooting
 
-### Problema: Kafka não inicia
+### Problem: Kafka won't start
 
 ```clojure
-;; Ver logs específicos
+;; View specific logs
 (dev/kafka-docker-logs! "kafka")
 
-;; Verificar se portas estão livres
+;; Check if ports are free
 ;; 9092 (Kafka), 29093 (Controller)
 ```
 
-### Problema: Não consegue conectar
+### Problem: Can't connect
 
 ```clojure
-;; Aguardar inicialização completa
+;; Wait for complete initialization
 (dev/wait-for-kafka 60)
 
-;; Verificar status
+;; Check status
 (dev/kafka-docker-status)
 ```
 
-### Reset Completo
+### Complete Reset
 
 ```clojure
-;; Parar e limpar tudo
+;; Stop and clean everything
 (dev/kafka-dev-teardown! true)
 
-;; Recriar do zero
+;; Recreate from scratch
 (dev/kafka-setup-kraft!)
 ```
 
-## 🎯 Recomendações
+## 🎯 Recommendations
 
-### Use KRaft Quando:
+### Use KRaft When:
 
-- ✅ Desenvolvimento local
-- ✅ Testes automatizados
-- ✅ Projetos novos
-- ✅ Quer startup mais rápido
+- ✅ Local development
+- ✅ Automated tests
+- ✅ New projects
+- ✅ Want faster startup
 
-### Use Zookeeper Quando:
+### Use Zookeeper When:
 
-- ⚠️ Ambiente de produção crítico
-- ⚠️ Ferramentas legacy que não suportam KRaft
-- ⚠️ Conformidade com setup existente
+- ⚠️ Critical production environment
+- ⚠️ Legacy tools that don't support KRaft
+- ⚠️ Compliance with existing setup
 
-## 🦋 Migração do Futuro
+## 🦋 Future Migration
 
-O Kafka Metamorphosis facilita a migração:
+Kafka Metamorphosis facilitates migration:
 
 ```clojure
-;; Atualmente usando Zookeeper
+;; Currently using Zookeeper
 (dev/kafka-setup-zookeeper!)
 
-;; Migrar para KRaft (mesma API)
+;; Migrate to KRaft (same API)
 (dev/kafka-setup-kraft!)
 
-;; Código da aplicação permanece o mesmo!
+;; Application code remains the same!
 ```
 
-A metamorfose do Kafka elimina a complexidade do Zookeeper! 🪲➡️🦋
+Kafka's metamorphosis eliminates Zookeeper complexity! 🪲➡️🦋

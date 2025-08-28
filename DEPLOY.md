@@ -1,27 +1,27 @@
-# Configuração de Deploy - Kafka Metamorphosis
+# Deploy Configuration - Kafka Metamorphosis
 
-## Configuração Rápida
+## Quick Setup
 
-Execute estes comandos para configurar o deploy:
+Run these commands to configure deployment:
 
 ```bash
-# 1. Configure as credenciais (uma vez só)
+# 1. Configure credentials (one time only)
 source deploy-setup.sh
 
-# 2. Faça o deploy
+# 2. Deploy
 ./deploy.sh
 ```
 
-## Configuração Manual
+## Manual Configuration
 
-Se preferir configurar manualmente:
+If you prefer to configure manually:
 
 ```bash
-# Exportar variáveis de ambiente
+# Export environment variables
 export CLOJARS_USERNAME="caioclavico"
-export CLOJARS_PASSWORD="seu-deploy-token-aqui"
+export CLOJARS_PASSWORD="your-deploy-token-here"
 
-# Verificar configuração
+# Check configuration
 lein check
 lein test
 
@@ -29,20 +29,20 @@ lein test
 lein deploy clojars
 ```
 
-## Arquivos Importantes
+## Important Files
 
-- `project.clj` - Configuração do projeto e dependências
-- `deploy-setup.sh` - Script para configurar credenciais
-- `deploy.sh` - Script automatizado de deploy
-- `RELEASE.md` - Guia completo de release
+- `project.clj` - Project configuration and dependencies
+- `deploy-setup.sh` - Script to configure credentials
+- `deploy.sh` - Automated deploy script
+- `RELEASE.md` - Complete release guide
 
-## Status Atual
+## Current Status
 
-- ✅ Projeto configurado para deploy
-- ✅ Scripts automatizados criados  
-- ✅ Documentação atualizada
-- 🔄 Aguardando primeiro deploy
+- ✅ Project configured for deployment
+- ✅ Automated scripts created  
+- ✅ Documentation updated
+- ✅ Successfully deployed to Clojars
 
-## Próximo Passo
+## Next Step
 
 Execute: `source deploy-setup.sh && ./deploy.sh`
