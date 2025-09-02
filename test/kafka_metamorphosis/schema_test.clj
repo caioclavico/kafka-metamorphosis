@@ -296,3 +296,46 @@
     (is (false? (schema/validate-message 
                  {:level1 {:y "test"}}
                  :nested-composition-test)))))
+
+(deftest test-topic-scoped-schemas
+  (testing "Topic-scoped schema definition and validation"
+    ;; Define topic-scoped schemas
+    (schema/defschema :users/default {:user-id int? :name string?})
+    (schema/defschema :users/profile {:user-id int? :name string? :bio string?})
+    (schema/defschema :orders {:order-id string? :total double?})
+    
+    ;; Test get-schema-for-topic
+    (is (not (nil? (schema/get-schema-for-topic "users"))))
+    (is (not (nil? (schema/get-schema-for-topic "orders"))))
+    (is (nil? (schema/get-schema-for-topic "nonexistent")))
+    
+    ;; Test list-schemas-for-topic
+    (let [user-schemas (schema/list-schemas-for-topic "users")]
+      (is (>= (count user-schemas) 2))
+      (is (some #(= % :users/default) user-schemas))
+      (is (some #(= % :users/profile) user-schemas)))
+    
+    ;; Test validate-message-for-topic
+    (is (true? (schema/validate-message-for-topic 
+                {:user-id 123 :name "John"} "users")))
+    (is (false? (schema/validate-message-for-topic 
+                 {:user-id "invalid" :name "John"} "users")))
+    (is (true? (schema/validate-message-for-topic 
+                {:user-id 123 :name "John"} "nonexistent"))) ; Should return true for missing schema
+    
+    ;; Test explain-validation-for-topic
+    (let [explanation (schema/explain-validation-for-topic 
+                        {:user-id 123 :name "John"} "users")]
+      (is (true? (:valid? explanation)))
+      (is (= "users" (:topic explanation))))
+    
+    (let [explanation (schema/explain-validation-for-topic 
+                        {:user-id "invalid"} "users")]
+      (is (false? (:valid? explanation)))
+      (is (seq (:errors explanation))))
+    
+    ;; Test with nonexistent topic (should return valid)
+    (let [explanation (schema/explain-validation-for-topic 
+                        {:some "data"} "nonexistent")]
+      (is (true? (:valid? explanation)))
+      (is (empty? (:errors explanation))))))

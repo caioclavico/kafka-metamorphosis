@@ -1,6 +1,7 @@
 (ns kafka-metamorphosis.schema
   "Schema management for Kafka messages"
-  (:require [kafka-metamorphosis.core :as c]))
+  (:require [kafka-metamorphosis.core :as c]
+            [clojure.string :as str]))
 
 ;; Schema registry
 (defonce ^:private schema-registry (atom {}))
@@ -17,6 +18,32 @@
   "Get a registered schema"
   [schema-id]
   (get @schema-registry schema-id))
+
+(defn get-schema-for-topic
+  "Get a schema for a specific topic.
+   
+   Looks for schemas in this order:
+   1. :topic-name/default
+   2. :topic-name (direct topic schema)
+   
+   Examples:
+   - (get-schema-for-topic \"users\") -> looks for :users/default or :users"
+  [topic-name]
+  (let [topic-keyword (keyword topic-name)
+        default-schema-id (keyword topic-name "default")]
+    (or (get-schema default-schema-id)
+        (get-schema topic-keyword))))
+
+(defn list-schemas-for-topic
+  "List all schemas registered for a specific topic"
+  [topic-name]
+  (let [topic-prefix (str topic-name "/")
+        all-schemas (keys @schema-registry)]
+    (filter (fn [schema-id]
+              (and (keyword? schema-id)
+                   (or (= (name schema-id) topic-name)
+                       (str/starts-with? (str schema-id) (str ":" topic-prefix)))))
+            all-schemas)))
 
 (defn list-schemas
   "List all registered schemas"
@@ -72,6 +99,19 @@
       (let [spec-map (:spec schema)]
         (validate-against-spec message spec-map))
       (throw (ex-info "Schema not found" {:schema-id schema-id :available (list-schemas)})))))
+
+(defn validate-message-for-topic
+  "Validate a message against a topic's schema.
+   
+   Automatically looks for topic-scoped schemas:
+   - (validate-message-for-topic message \"users\") -> uses :users/default or :users"
+  [message topic-name]
+  (let [schema (get-schema-for-topic topic-name)]
+    (if schema
+      (let [spec-map (:spec schema)]
+        (validate-against-spec message spec-map))
+      ;; Return true if no schema found (optional validation)
+      true)))
 
 (declare explain-field)
 
@@ -139,6 +179,21 @@
          :message message
          :schema-id schema-id})
       (throw (ex-info "Schema not found" {:schema-id schema-id :available (list-schemas)})))))
+
+(defn explain-validation-for-topic
+  "Get detailed validation explanation for a topic's schema"
+  [message topic-name]
+  (let [schema (get-schema-for-topic topic-name)]
+    (if schema
+      (let [spec-map (:spec schema)
+            schema-id (or (keyword topic-name "default") (keyword topic-name))
+            errors (explain-against-spec message spec-map "")]
+        {:valid? (empty? errors)
+         :errors errors
+         :message message
+         :topic topic-name
+         :schema-id schema-id})
+      {:valid? true :errors [] :message message :topic topic-name})))
 
 (defn map-of
   "Create a predicate for maps with specific key-value predicates"

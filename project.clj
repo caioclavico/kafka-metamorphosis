@@ -1,4 +1,4 @@
-(defproject org.clojars.caioclavico/kafka-metamorphosis "0.3.0"
+(defproject org.clojars.caioclavico/kafka-metamorphosis "0.4.0"
   :description "A comprehensive Clojure wrapper that transforms the Java Kafka APIs into an elegant, idiomatic Clojure interface"
   :url "https://github.com/caioclavico/kafka-metamorphosis"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"

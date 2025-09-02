@@ -3,6 +3,42 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-09-02
+### Added - Topic-Scoped Schema Validation with Strict Enforcement 🎯
+- **Topic-Scoped Schemas**: Schema definition using `:topic-name/schema-id` convention (e.g., `:users/default`, `:orders/profile`)
+- **Auto-Validation Mode**: `{:schemas true}` enables automatic schema detection and validation based on topic names
+- **Strict Schema Enforcement**: Messages rejected when schema missing or validation fails - no more corrupt data propagation
+- **Per-Topic Schema Mapping**: `{:schemas {"topic1" :schema1}}` for explicit topic-to-schema mapping with missing topic rejection
+- **Producer Schema Validation**: Automatic map-to-JSON serialization with pre-validation using original data structures
+- **Consumer Schema Filtering**: Automatic JSON-to-map parsing with post-validation and invalid message filtering
+- **Schema Existence Checking**: Strict validation requires schema existence - no silent failures
+- **Mapping Requirement Enforcement**: Per-topic mapping mode rejects unmapped topics with clear error messages
+
+### Enhanced Features
+- **Automatic Serialization**: Maps automatically converted to JSON strings when using StringSerializer
+- **Automatic Deserialization**: JSON strings automatically parsed to maps before schema validation
+- **Comprehensive Error Reporting**: Detailed warnings showing exact validation failures, available mappings, and rejection reasons
+- **Non-Blocking Validation**: Invalid messages rejected without throwing exceptions - graceful degradation
+- **Backward Compatibility**: Existing code works unchanged - new features are opt-in
+
+### Integration Tests
+- **Complete Integration Suite**: 6 comprehensive integration tests covering real Kafka scenarios
+- **Conditional Test Execution**: Tests only run when Kafka is available at localhost:9092
+- **End-to-End Validation**: Producer-consumer flows with schema validation in realistic scenarios
+- **Error Handling Tests**: Invalid data rejection, unmapped topics, and missing schemas
+- **Async Producer Tests**: Asynchronous message sending with schema validation and callbacks
+
+### Documentation
+- **Topic Schema Validation Guide**: Complete documentation at `docs/TOPIC_SCHEMA_VALIDATION.md`
+- **Enhanced Examples**: Updated `topic_schema_examples.clj` with new validation behaviors
+- **Implementation Summary**: Comprehensive feature overview in `docs/IMPLEMENTATION_SUMMARY.md`
+- **Migration Guide**: Step-by-step guide for adopting topic-scoped validation
+
+### Testing
+- **46 Unit Tests**: All existing tests passing with 232 assertions
+- **6 Integration Tests**: Full Kafka integration scenarios with conditional execution
+- **Zero Breaking Changes**: 100% backward compatibility maintained
+
 ## [0.3.0] - 2025-09-02
 ### Added - Schema Composition System 🔗
 - **Schema Reference**: `schema-ref` function for referencing other registered schemas
