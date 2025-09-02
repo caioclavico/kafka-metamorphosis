@@ -6,20 +6,20 @@
 
 Add this to your `project.clj` dependencies:
 
-```clojure
-[org.clojars.caioclavico/kafka-metamorphosis "0.1.0-SNAPSHOT"]
-```
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.caioclavico/kafka-metamorphosis.svg)](https://clojars.org/org.clojars.caioclavico/kafka-metamorphosis)
+
+
 
 Or for deps.edn:
 
 ```clojure
-org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.2.0"}
 ```
 
 For tools.deps CLI:
 
 ```clojure
-clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}'
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.2.0"}}}'
 ```
 
 _"When Gregor Samsa woke up one morning from unsettling dreams, he found himself changed in his bed into a monstrous vermin."_  
@@ -34,11 +34,12 @@ Kafka Metamorphosis is a comprehensive Clojure wrapper that transforms the Java 
 - 🪲 **Idiomatic Clojure API** - Clean, functional interface over Kafka's Java driver
 - 📦 **Complete Kafka Support** - Producer, Consumer, and Admin operations
 - ⚙️ **Multiple Serialization Formats** - String, JSON, Avro, and Protobuf support
-- 🔧 **Configuration Presets** - Pre-built configurations for common use cases
+- �️ **Schema Validation** - Built-in message validation with detailed error reporting
+- �🔧 **Configuration Presets** - Pre-built configurations for common use cases
 - 🔄 **High-Level & Low-Level APIs** - Choose your level of abstraction
-- � **Docker Development Support** - Built-in Docker Compose utilities
+- 🐳 **Docker Development Support** - Built-in Docker Compose utilities
 - 🆕 **KRaft Mode Support** - Modern Kafka without Zookeeper
-- 🛡️ **Error Handling** - Proper exception handling with meaningful messages
+- �️ **Error Handling** - Proper exception handling with meaningful messages
 - 📊 **Health Checks** - Built-in cluster monitoring and diagnostics
 
 ## 📦 Installation
@@ -46,19 +47,19 @@ Kafka Metamorphosis is a comprehensive Clojure wrapper that transforms the Java 
 Add this to your `project.clj` dependencies:
 
 ```clojure
-[org.clojars.caioclavico/kafka-metamorphosis "0.1.0-SNAPSHOT"]
+[org.clojars.caioclavico/kafka-metamorphosis "0.2.0"]
 ```
 
 Or for deps.edn:
 
 ```clojure
-org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.2.0"}
 ```
 
 For tools.deps CLI:
 
 ```clojure
-clj -Sdeps '{:deps {kafka-metamorphosis/kafka-metamorphosis {:mvn/version "0.1.0-SNAPSHOT"}}}'
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.2.0"}}}'
 ```
 
 ## Documentation
@@ -67,6 +68,7 @@ clj -Sdeps '{:deps {kafka-metamorphosis/kafka-metamorphosis {:mvn/version "0.1.0
 - [🐳 Docker Setup Guide](docs/DOCKER_SETUP.md) - Complete Docker development environment setup
 - [🆕 KRaft Mode Guide](docs/KRAFT_MODE.md) - Modern Kafka without Zookeeper 
 - [📋 Topic Creation Guide](docs/TOPIC_CREATION.md) - Comprehensive topic management
+- [🛡️ Schema Validation Guide](docs/SCHEMA_VALIDATION.md) - Message schema validation and error handling
 
 ## Quick Start
 
@@ -135,6 +137,35 @@ For more control, use the individual namespaces:
 (admin/create-topic! a "new-topic" {:partitions 3})
 (admin/list-topics a)
 (admin/close! a)
+```
+
+### Schema Validation
+
+Ensure message integrity with built-in schema validation:
+
+```clojure
+(require '[kafka-metamorphosis.schema :as schema])
+
+;; Define a schema
+(schema/defschema :user-schema
+  {:user-id int?
+   :name string?
+   :email string?
+   :active boolean?})
+
+;; Validate messages
+(schema/validate-message 
+  {:user-id 123 :name "John" :email "john@example.com" :active true}
+  :user-schema) ; => true
+
+;; Send validated messages
+(schema/send-schema-message! 
+  "users" 
+  {:user-id 456 :name "Jane" :email "jane@example.com" :active true}
+  :user-schema)
+
+;; Consume with validation
+(schema/consume-schema-messages! "user-group" ["users"] :user-schema)
 ```
 
 ## Command Line Interface

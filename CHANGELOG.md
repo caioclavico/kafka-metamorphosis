@@ -3,7 +3,48 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
-## [0.1.0-SNAPSHOT] - 2025-08-28
+## [0.2.0] - 2025-09-01
+### Added - Schema Validation System 🛡️
+- **Custom Schema Validation**: Complete schema validation system without clojure.spec dependency
+- **Schema Definition API**: `defschema` function for defining message schemas with simple predicate maps
+- **Message Validation**: `validate-message` and `explain-validation` functions with detailed error reporting
+- **Built-in Predicates**: `one-of`, `min-count`, `max-count`, `map-of` for common validation patterns
+- **Complex Structure Support**: Nested maps, collections, and arrays with full validation
+- **Custom Predicates**: Support for any function that returns boolean for validation
+- **Kafka Integration**: Schema-validated producers and consumers with `send-schema-message!` and `consume-schema-messages!`
+- **Error Path Reporting**: Precise field paths for validation errors (e.g., "user.address.zip-code")
+- **Schema Registry**: In-memory schema storage and retrieval system
+- **Performance Optimized**: Custom implementation without clojure.spec overhead
+
+### Documentation
+- **Schema Validation Guide**: Complete documentation at `docs/SCHEMA_VALIDATION.md`
+- **Schema Examples**: Comprehensive examples in `src/kafka_metamorphosis/exemples/schema_examples.clj`
+- **Updated README**: Added schema validation section and feature highlights
+- **API Reference**: Complete schema validation API documentation
+- **Best Practices**: Schema organization, versioning, and performance guidelines
+
+### Testing
+- **Schema Test Suite**: 10 new tests with 36 assertions covering all schema functionality
+- **Complex Validation Tests**: Nested structures, collections, and error handling
+- **Custom Predicate Tests**: Validation of user-defined predicates
+- **Integration Tests**: Kafka producer/consumer integration with schema validation
+- **Error Explanation Tests**: Detailed validation error reporting verification
+
+### Examples
+- **Basic Schemas**: Simple field validation examples
+- **E-commerce Schemas**: Complex order, cart, and transaction validation
+- **Event Logging**: System event and audit log schema examples
+- **User Profiles**: Nested user data with preferences and addresses
+- **Custom Predicates**: Email, CPF, and domain-specific validation examples
+
+### Breaking Changes
+- **Schema Module**: New `kafka-metamorphosis.schema` namespace
+- **Validation Functions**: New API for message validation (non-breaking, additive)
+
+### Summary
+Version 0.2.0 introduces a powerful schema validation system that provides type safety and message integrity for Kafka applications. This major feature addition includes comprehensive documentation, examples, and full integration with existing Kafka operations. The schema system offers better performance than clojure.spec while maintaining simplicity and flexibility.
+
+## [0.1.0] - 2025-08-28
 ### Added
 - **Core Library**: Complete Kafka wrapper with idiomatic Clojure APIs
 - **Producer Module**: High-level and low-level producer functions with sync/async support
@@ -55,5 +96,6 @@ All notable changes to this project will be documented in this file. This change
 - **Global Accessibility**: Ready for international open-source community
 - **Consistent Terminology**: Standardized technical terms across all docs
 
-[Unreleased]: https://github.com/caioclavico/kafka-metamorphosis/compare/v0.1.0-SNAPSHOT...HEAD
-[0.1.0-SNAPSHOT]: https://github.com/caioclavico/kafka-metamorphosis/releases/tag/v0.1.0-SNAPSHOT
+[Unreleased]: https://github.com/caioclavico/kafka-metamorphosis/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/caioclavico/kafka-metamorphosis/releases/tag/v0.2.0
+[0.1.0]: https://github.com/caioclavico/kafka-metamorphosis/releases/tag/v0.1.0
