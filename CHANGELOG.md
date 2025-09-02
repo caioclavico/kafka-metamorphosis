@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-09-02
+### Added - Schema Composition System 🔗
+- **Schema Reference**: `schema-ref` function for referencing other registered schemas
+- **Any-of Composition**: `any-of` function for OR logic validation (field matches any of the provided schemas)
+- **All-of Composition**: `all-of` function for AND logic validation (field must match all provided schemas)
+- **Nested Composition**: Support for complex nested schema composition patterns
+- **Dynamic Schema Validation**: Conditional validation based on schema combinations
+- **Advanced Composition Examples**: Real-world patterns for flexible user profiles, product catalogs, and organization structures
+
+### Documentation
+- **Schema Composition Guide**: Added comprehensive composition section to `docs/SCHEMA_VALIDATION.md`
+- **Composition Examples**: Added `schema-composition-examples` and `advanced-composition-examples` functions
+- **Updated API Reference**: Added composition functions documentation
+- **Best Practices**: Guidelines for effective schema composition patterns
+
+### Testing
+- **Composition Test Suite**: 2 new test functions with comprehensive edge case coverage
+- **Schema Reference Tests**: Validation of cross-schema references
+- **Any-of Logic Tests**: OR composition validation scenarios
+- **All-of Logic Tests**: AND composition validation scenarios
+- **Edge Case Tests**: Non-existent schemas, empty compositions, and nested patterns
+
 ## [0.2.0] - 2025-09-01
 ### Added - Schema Validation System 🛡️
 - **Custom Schema Validation**: Complete schema validation system without clojure.spec dependency

@@ -164,6 +164,32 @@
   [n]
   (fn [coll] (and (coll? coll) (<= (count coll) n))))
 
+(defn schema-ref
+  "Create a reference to another schema for validation"
+  [schema-id]
+  (fn [value]
+    (validate-message value schema-id)))
+
+(defn any-of
+  "Create a predicate that validates against any of the given schemas"
+  [& schema-ids]
+  (fn [value]
+    (some (fn [schema-id]
+            (try
+              (validate-message value schema-id)
+              (catch Exception _e false)))
+          schema-ids)))
+
+(defn all-of
+  "Create a predicate that validates against all of the given schemas"
+  [& schema-ids]
+  (fn [value]
+    (every? (fn [schema-id]
+              (try
+                (validate-message value schema-id)
+                (catch Exception _e false)))
+            schema-ids)))
+
 (defn with-schema-serializers
   "Wrap serializers with schema validation"
   [serializers schema-id]

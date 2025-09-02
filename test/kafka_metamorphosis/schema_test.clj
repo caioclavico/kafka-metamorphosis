@@ -198,3 +198,101 @@
         (is (contains? error-fields "user.id"))
         (is (some #(str/starts-with? % "items[") error-fields))
         (is (contains? error-fields "metadata"))))))
+
+(deftest test-schema-composition
+  (testing "Schema composition with schema-ref, any-of, and all-of"
+    ;; Setup base schemas
+    (schema/defschema :base-schema-a {:a string?})
+    (schema/defschema :base-schema-b {:b int?})
+    (schema/defschema :base-schema-c {:c boolean?})
+    
+    ;; Test schema-ref (direct reference)
+    (schema/defschema :user-ref-test {:id int? :name string?})
+    (schema/defschema :profile-with-user-test 
+                     {:user (schema/schema-ref :user-ref-test)
+                      :bio string?})
+    
+    (is (true? (schema/validate-message 
+                {:user {:id 123 :name "John"} :bio "Developer"} 
+                :profile-with-user-test)))
+    (is (false? (schema/validate-message 
+                 {:user {:id "not-a-number" :name "John"} :bio "Developer"} 
+                 :profile-with-user-test)))
+    
+    ;; Test any-of (OR logic)
+    (schema/defschema :schema-any-test 
+                     {:data (schema/any-of :base-schema-a :base-schema-b)})
+    
+    (is (true? (schema/validate-message {:data {:a "hello"}} :schema-any-test)))
+    (is (true? (schema/validate-message {:data {:b 123}} :schema-any-test)))
+    (is (false? (schema/validate-message {:data {:c true}} :schema-any-test)))
+    (is (false? (schema/validate-message {:data {:invalid "field"}} :schema-any-test)))
+    
+    ;; Test all-of (AND logic)
+    (schema/defschema :schema-all-test 
+                     {:data (schema/all-of :base-schema-a :base-schema-b)})
+    
+    (is (true? (schema/validate-message {:data {:a "hello" :b 123}} :schema-all-test)))
+    (is (false? (schema/validate-message {:data {:a "hello"}} :schema-all-test)))
+    (is (false? (schema/validate-message {:data {:b 123}} :schema-all-test)))
+    
+    ;; Test complex composition
+    (schema/defschema :complex-composition-test
+                     {:primary (schema/any-of :base-schema-a :base-schema-b)
+                      :secondary (schema/all-of :base-schema-a :base-schema-c)})
+    
+    (is (true? (schema/validate-message 
+                {:primary {:a "test"}
+                 :secondary {:a "test" :c true}}
+                :complex-composition-test)))
+    (is (false? (schema/validate-message 
+                 {:primary {:invalid "field"}
+                  :secondary {:a "test" :c true}}
+                 :complex-composition-test)))))
+
+(deftest test-schema-composition-edge-cases
+  (testing "Edge cases for schema composition"
+    ;; Setup schemas
+    (schema/defschema :edge-case-a {:x int?})
+    (schema/defschema :edge-case-b {:y string?})
+    
+    ;; Test with non-existent schema reference
+    (let [invalid-ref (schema/schema-ref :non-existent-schema)]
+      ;; This should return false when trying to validate with a non-existent schema
+      (is (false? (try (invalid-ref {:x 123}) 
+                      (catch Exception _ false)))))
+    
+    ;; Test any-of with non-existent schemas
+    (let [any-with-invalid (schema/any-of :edge-case-a :non-existent-schema)]
+      (is (true? (any-with-invalid {:x 123})))  ; Should pass if at least one valid
+      ;; This should fail because none of the schemas match
+      (is (false? (boolean (any-with-invalid {:z "invalid"})))))
+    
+    ;; Test all-of with non-existent schemas
+    (let [all-with-invalid (schema/all-of :edge-case-a :non-existent-schema)]
+      ;; Should fail if any invalid (non-existent schema causes failure)
+      (is (false? (boolean (all-with-invalid {:x 123})))))
+    
+    ;; Test empty composition
+    (let [empty-any (schema/any-of)
+          empty-all (schema/all-of)]
+      ;; any-of with no schemas should fail
+      (is (false? (boolean (empty-any {:x 123}))))
+      ;; all-of with no schemas should pass (vacuous truth)
+      (is (true? (boolean (empty-all {:x 123})))))
+    
+    ;; Test nested composition
+    (schema/defschema :nested-composition-test
+                     {:level1 (schema/any-of 
+                               :edge-case-a 
+                               (schema/all-of :edge-case-a :edge-case-b))})
+    
+    (is (true? (schema/validate-message 
+                {:level1 {:x 123}}
+                :nested-composition-test)))
+    (is (true? (schema/validate-message 
+                {:level1 {:x 123 :y "test"}}
+                :nested-composition-test)))
+    (is (false? (schema/validate-message 
+                 {:level1 {:y "test"}}
+                 :nested-composition-test)))))

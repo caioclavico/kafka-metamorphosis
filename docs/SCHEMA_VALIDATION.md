@@ -11,6 +11,7 @@ Kafka Metamorphosis provides a powerful and intuitive schema validation system t
 - [Validation](#validation)
 - [Built-in Predicates](#built-in-predicates)
 - [Custom Predicates](#custom-predicates)
+- [Schema Composition](#schema-composition)
 - [Complex Structures](#complex-structures)
 - [Collections](#collections)
 - [Error Handling](#error-handling)
@@ -156,6 +157,216 @@ You can create custom validation functions:
    :balance positive?      ; custom predicate
    :cpf valid-cpf?         ; custom predicate
    :status (schema/one-of :active :inactive)})
+```
+
+## Schema Composition
+
+Kafka Metamorphosis provides powerful schema composition features that allow you to create complex schemas by combining simpler ones.
+
+### Schema Reference (schema-ref)
+
+Reference other schemas within your schema definitions:
+
+```clojure
+;; Define base schemas
+(schema/defschema :user-details
+  {:id int?
+   :name string?
+   :email string?})
+
+(schema/defschema :address-details
+  {:street string?
+   :city string?
+   :zip-code string?})
+
+;; Reference schemas in other schemas
+(schema/defschema :user-profile
+  {:user (schema/schema-ref :user-details)
+   :address (schema/schema-ref :address-details)
+   :bio string?
+   :created-at string?})
+
+;; Usage
+(schema/validate-message 
+  {:user {:id 123 :name "John" :email "john@example.com"}
+   :address {:street "123 Main St" :city "NYC" :zip-code "10001"}
+   :bio "Software Developer"
+   :created-at "2024-01-01"}
+  :user-profile) ; => true
+```
+
+### Any-of Composition (OR logic)
+
+Use `any-of` when a field can match any one of several schemas:
+
+```clojure
+;; Define alternative schemas
+(schema/defschema :email-contact
+  {:email string?
+   :preferred-time string?})
+
+(schema/defschema :phone-contact
+  {:phone string?
+   :area-code string?})
+
+(schema/defschema :social-contact
+  {:platform string?
+   :handle string?})
+
+;; Field can be any of these contact types
+(schema/defschema :user-contact
+  {:user-id int?
+   :contact-info (schema/any-of :email-contact :phone-contact :social-contact)
+   :notes string?})
+
+;; All of these are valid:
+(schema/validate-message 
+  {:user-id 123
+   :contact-info {:email "john@example.com" :preferred-time "morning"}
+   :notes "Primary contact"}
+  :user-contact) ; => true
+
+(schema/validate-message 
+  {:user-id 123
+   :contact-info {:phone "+1-555-1234" :area-code "555"}
+   :notes "Phone contact"}
+  :user-contact) ; => true
+
+(schema/validate-message 
+  {:user-id 123
+   :contact-info {:platform "twitter" :handle "@john_doe"}
+   :notes "Social media"}
+  :user-contact) ; => true
+```
+
+### All-of Composition (AND logic)
+
+Use `all-of` when a field must satisfy multiple schemas simultaneously:
+
+```clojure
+;; Define partial schemas
+(schema/defschema :user-basic
+  {:id int?
+   :name string?})
+
+(schema/defschema :user-contact
+  {:email string?
+   :phone string?})
+
+(schema/defschema :user-permissions
+  {:role string?
+   :permissions [string?]})
+
+;; Field must satisfy all schemas
+(schema/defschema :complete-user
+  {:user-data (schema/all-of :user-basic :user-contact :user-permissions)
+   :registration-date string?})
+
+;; This message must have all fields from all three schemas
+(schema/validate-message 
+  {:user-data {:id 123
+               :name "John Doe"
+               :email "john@example.com"
+               :phone "+1-555-1234"
+               :role "admin"
+               :permissions ["read" "write" "delete"]}
+   :registration-date "2024-01-01"}
+  :complete-user) ; => true
+
+;; This would fail (missing permissions fields)
+(schema/validate-message 
+  {:user-data {:id 123
+               :name "John Doe"
+               :email "john@example.com"
+               :phone "+1-555-1234"}
+   :registration-date "2024-01-01"}
+  :complete-user) ; => false
+```
+
+### Complex Composition
+
+You can combine composition functions for sophisticated validation logic:
+
+```clojure
+;; Define base schemas
+(schema/defschema :basic-product
+  {:id int? :name string? :price number?})
+
+(schema/defschema :digital-product
+  {:download-url string? :file-size int?})
+
+(schema/defschema :physical-product
+  {:weight number? :dimensions string?})
+
+(schema/defschema :subscription-product
+  {:billing-period string? :auto-renew boolean?})
+
+;; Complex composition: product can be digital OR physical, 
+;; and optionally be a subscription
+(schema/defschema :flexible-product
+  {:basic-info (schema/schema-ref :basic-product)
+   :product-type (schema/any-of :digital-product :physical-product)
+   :subscription-info (schema/any-of 
+                       :subscription-product
+                       {:subscription boolean?})  ; or just a flag
+   :metadata map?})
+
+;; Examples of valid products:
+;; Digital subscription product
+(schema/validate-message 
+  {:basic-info {:id 1 :name "Software License" :price 99.99}
+   :product-type {:download-url "https://..." :file-size 1024}
+   :subscription-info {:billing-period "monthly" :auto-renew true}
+   :metadata {:category "software"}}
+  :flexible-product) ; => true
+
+;; Physical one-time product  
+(schema/validate-message 
+  {:basic-info {:id 2 :name "Book" :price 29.99}
+   :product-type {:weight 0.5 :dimensions "20x15x2cm"}
+   :subscription-info {:subscription false}
+   :metadata {:category "books"}}
+  :flexible-product) ; => true
+```
+
+### Nested Composition
+
+Composition functions can be nested for even more complex scenarios:
+
+```clojure
+(schema/defschema :advanced-user
+  {:profile (schema/any-of
+             ;; Simple user (just basic info)
+             :user-basic
+             ;; Complete user (basic + contact + permissions)  
+             (schema/all-of :user-basic :user-contact :user-permissions)
+             ;; Admin user (basic + contact + permissions + special fields)
+             (schema/all-of :user-basic 
+                           :user-contact 
+                           :user-permissions
+                           {:admin-level int?
+                            :last-admin-action string?}))
+   :account-type (schema/one-of :basic :premium :admin)
+   :created-at string?})
+```
+
+### Composition Error Handling
+
+When using composed schemas, errors are reported with clear field paths:
+
+```clojure
+(schema/explain-validation 
+  {:user-data {:id 123  ; missing name, email, permissions
+               :phone "+1-555-1234"}
+   :registration-date "2024-01-01"}
+  :complete-user)
+
+; Will show errors like:
+; {:field "user-data" :error "None of the schemas in any-of matched"}
+; Or for all-of:
+; {:field "user-data.name" :error "Field is missing"}
+; {:field "user-data.email" :error "Field is missing"}
+; {:field "user-data.role" :error "Field is missing"}
 ```
 
 ## Complex Structures
@@ -543,6 +754,12 @@ When validation fails in nested structures, you get precise error paths:
 - `(min-count n)` - Minimum collection size
 - `(max-count n)` - Maximum collection size  
 - `(map-of key-pred value-pred)` - Map with specific key-value predicates
+
+### Composition Functions
+
+- `(schema-ref schema-id)` - Reference another registered schema
+- `(any-of & schema-ids)` - Match any one of the provided schemas (OR logic)
+- `(all-of & schema-ids)` - Match all of the provided schemas (AND logic)
 
 ### Kafka Integration
 

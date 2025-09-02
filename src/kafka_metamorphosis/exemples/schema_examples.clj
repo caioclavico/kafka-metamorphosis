@@ -456,6 +456,185 @@
       (doseq [error (:errors explanation)]
         (println "  •" (:field error) "-" (:error error))))))
 
+;; ============================================================================
+;; 5. SCHEMA COMPOSITION EXAMPLES
+;; ============================================================================
+
+(defn schema-composition-examples
+  "Examples demonstrating schema composition features"
+  []
+  (println "\n🔗 Schema Composition Examples")
+  (println "===============================")
+
+  ;; Base schemas for composition
+  (schema/defschema :user-details
+    {:id int?
+     :name string?
+     :email string?})
+
+  (schema/defschema :address-details
+    {:street string?
+     :city string?
+     :zipcode string?})
+
+  (schema/defschema :contact-details
+    {:phone string?
+     :emergency-contact string?})
+
+  ;; 1. Schema Reference (schema-ref)
+  (println "\n1. Schema Reference Examples:")
+  (schema/defschema :profile-with-user
+    {:user (schema/schema-ref :user-details)
+     :bio string?
+     :created-at string?})
+
+  (let [valid-profile {:user {:id 123 :name "João" :email "joao@test.com"}
+                      :bio "Software Developer"
+                      :created-at "2024-01-01"}]
+    (println "  Valid profile with user reference:" 
+             (schema/validate-message valid-profile :profile-with-user)))
+
+  ;; 2. Any-of Composition (OR logic)
+  (println "\n2. Any-of Composition (OR logic):")
+  (schema/defschema :contact-info
+    {:primary-contact (schema/any-of :user-details :contact-details)
+     :notes string?})
+
+  (let [user-contact {:primary-contact {:id 123 :name "João" :email "joao@test.com"}
+                     :notes "Primary user contact"}
+        phone-contact {:primary-contact {:phone "+55-11-99999-9999" 
+                                        :emergency-contact "Maria Silva"}
+                      :notes "Phone contact info"}]
+    (println "  User as primary contact:" 
+             (schema/validate-message user-contact :contact-info))
+    (println "  Phone as primary contact:" 
+             (schema/validate-message phone-contact :contact-info)))
+
+  ;; 3. All-of Composition (AND logic)
+  (println "\n3. All-of Composition (AND logic):")
+  (schema/defschema :complete-user
+    {:user-data (schema/all-of :user-details :address-details)
+     :registration-date string?})
+
+  (let [complete-user {:user-data {:id 123 
+                                  :name "João" 
+                                  :email "joao@test.com"
+                                  :street "Rua das Flores, 123"
+                                  :city "São Paulo"
+                                  :zipcode "01234-567"}
+                      :registration-date "2024-01-01"}
+        incomplete-user {:user-data {:id 123 
+                                    :name "João" 
+                                    :email "joao@test.com"}
+                        :registration-date "2024-01-01"}]
+    (println "  Complete user (has both user and address):" 
+             (schema/validate-message complete-user :complete-user))
+    (println "  Incomplete user (missing address):" 
+             (schema/validate-message incomplete-user :complete-user)))
+
+  ;; 4. Complex Composition
+  (println "\n4. Complex Composition:")
+  (schema/defschema :flexible-user-profile
+    {:basic-info (schema/schema-ref :user-details)
+     :contact-method (schema/any-of :address-details :contact-details)
+     :additional-info (schema/all-of 
+                       {:verified boolean?}
+                       {:terms-accepted boolean?})})
+
+  (let [complex-profile {:basic-info {:id 123 :name "João" :email "joao@test.com"}
+                        :contact-method {:phone "+55-11-99999-9999" 
+                                        :emergency-contact "Maria"}
+                        :additional-info {:verified true 
+                                         :terms-accepted true}}]
+    (println "  Complex profile validation:" 
+             (schema/validate-message complex-profile :flexible-user-profile)))
+
+  ;; 5. Nested Composition
+  (println "\n5. Nested Composition:")
+  (schema/defschema :organization
+    {:members [(schema/any-of 
+                :user-details
+                (schema/all-of :user-details :contact-details))]
+     :settings (schema/map-of keyword? string?)})
+
+  (let [org-data {:members [{:id 1 :name "João" :email "joao@test.com"}
+                           {:id 2 :name "Maria" :email "maria@test.com"
+                            :phone "+55-11-88888-8888" 
+                            :emergency-contact "José Silva"}]
+                 :settings {:theme "dark" :language "pt-BR"}}]
+    (println "  Organization with mixed member types:" 
+             (schema/validate-message org-data :organization))))
+
+;; ============================================================================
+;; 6. ADVANCED COMPOSITION PATTERNS
+;; ============================================================================
+
+(defn advanced-composition-examples
+  "Advanced schema composition patterns"
+  []
+  (println "\n🚀 Advanced Composition Examples")
+  (println "=================================")
+
+  ;; Conditional schemas
+  (schema/defschema :user-type-schema
+    {:type (schema/one-of :admin :user :guest)})
+
+  (schema/defschema :permissions-schema
+    {:permissions [string?]})
+
+  ;; Dynamic composition based on user type
+  (schema/defschema :dynamic-user
+    {:user-info (schema/any-of 
+                 ;; Admin has full user details + permissions
+                 (schema/all-of :user-details :permissions-schema)
+                 ;; Regular user has just basic details
+                 :user-details)
+     :type (schema/one-of :admin :user :guest)})
+
+  (let [admin-user {:user-info {:id 1 :name "Admin" :email "admin@test.com"
+                               :permissions ["read" "write" "delete"]}
+                   :type :admin}
+        regular-user {:user-info {:id 2 :name "User" :email "user@test.com"}
+                     :type :user}]
+    (println "  Admin user validation:" 
+             (schema/validate-message admin-user :dynamic-user))
+    (println "  Regular user validation:" 
+             (schema/validate-message regular-user :dynamic-user)))
+
+  ;; Multi-level composition
+  (schema/defschema :basic-product
+    {:id int? :name string? :price number?})
+
+  (schema/defschema :inventory-info
+    {:stock int? :warehouse string?})
+
+  (schema/defschema :shipping-info
+    {:weight number? :dimensions string?})
+
+  (schema/defschema :product-catalog
+    {:products [(schema/any-of
+                 :basic-product  ; Basic product
+                 (schema/all-of :basic-product :inventory-info)  ; With inventory
+                 (schema/all-of :basic-product :shipping-info)   ; With shipping
+                 (schema/all-of :basic-product :inventory-info :shipping-info))]}) ; Full info
+
+  (let [catalog {:products [{:id 1 :name "Basic Item" :price 10.0}
+                           {:id 2 :name "Stocked Item" :price 20.0 
+                            :stock 50 :warehouse "A1"}
+                           {:id 3 :name "Shippable Item" :price 30.0 
+                            :weight 2.5 :dimensions "10x10x5"}
+                           {:id 4 :name "Complete Item" :price 40.0 
+                            :stock 25 :warehouse "B2" 
+                            :weight 1.0 :dimensions "5x5x2"}]}]
+    (println "  Product catalog with mixed product types:" 
+             (schema/validate-message catalog :product-catalog))))
+
+(defn run-composition-examples
+  "Run all composition examples"
+  []
+  (schema-composition-examples)
+  (advanced-composition-examples))
+
 (comment
   ;; Para executar os exemplos:
   
@@ -467,6 +646,9 @@
   
   ;; Executar exemplos de validação com erros
   (validation-examples)
+  
+  ;; Executar exemplos de composição
+  (run-composition-examples)
   
   ;; Ver schemas registrados
   (schema/list-schemas)
