@@ -1,6 +1,7 @@
 # Kafka Metamorphosis 🪲
 
 ![Kafka Metamorphosis](docs/images/kafka-metamorphosis.jpg)
+
 _"When Gregor Samsa woke up one morning from unsettling dreams, he found himself changed in his bed into a monstrous vermin."_  
 — Franz Kafka, The Metamorphosis
 
