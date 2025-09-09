@@ -31,13 +31,13 @@ Add this to your `project.clj` dependencies:
 Or for deps.edn:
 
 ```clojure
-org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.3.0"}
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.0"}
 ```
 
 For tools.deps CLI:
 
 ```clojure
-clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.3.0"}}}'
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.0"}}}'
 ```
 
 ## Documentation
