@@ -1,0 +1,43 @@
+/target
+/classes
+/checkouts
+profiles.clj
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+/.prepl-port
+.hgignore
+.hg/
+.calva/
+.clj-kondo
+.lsp/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+.env
+.credentials
+clojars-credentials.clj
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# Build artifacts
+figwheel_server.log
+.rebel_readline_history
+
+.lein-*
