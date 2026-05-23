@@ -1,0 +1,80 @@
+name: Deploy to Clojars
+
+# Deploys to Clojars when the version in project.clj changes on a push to main
+# (typically the merge commit of a PR). Doc-only or test-only commits do NOT
+# trigger a deploy. Clojars rejects re-deploys of the same version, so this is
+# safe even if it accidentally runs twice for the same version.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # need previous commit to diff project.clj
+
+      - name: Detect version change
+        id: version
+        run: |
+          CURRENT=$(grep -oE 'defproject [^ ]+ "[^"]+"' project.clj | grep -oE '"[^"]+"' | tr -d '"')
+          PREVIOUS=$(git show HEAD~1:project.clj 2>/dev/null | grep -oE 'defproject [^ ]+ "[^"]+"' | grep -oE '"[^"]+"' | tr -d '"' || echo "")
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "previous=$PREVIOUS" >> $GITHUB_OUTPUT
+          if [ "$CURRENT" != "$PREVIOUS" ] && [ -n "$CURRENT" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Version changed: $PREVIOUS -> $CURRENT"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Version unchanged ($CURRENT) — skipping deploy"
+          fi
+
+      - name: Set up JDK 21
+        if: steps.version.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Leiningen
+        if: steps.version.outputs.changed == 'true'
+        uses: DeLaGuardo/setup-clojure@13.0
+        with:
+          lein: latest
+
+      - name: Cache Maven dependencies
+        if: steps.version.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('project.clj') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      - name: lein check
+        if: steps.version.outputs.changed == 'true'
+        run: lein check
+
+      - name: lein test
+        if: steps.version.outputs.changed == 'true'
+        run: lein test
+
+      - name: Deploy to Clojars
+        if: steps.version.outputs.changed == 'true'
+        env:
+          CLOJARS_USERNAME: ${{ secrets.CLOJARS_USERNAME }}
+          CLOJARS_PASSWORD: ${{ secrets.CLOJARS_PASSWORD }}
+        run: lein deploy clojars
+
+      - name: Create git tag
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.current }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION" || echo "Tag already exists"
+          git push origin "v$VERSION" || echo "Tag already pushed"
