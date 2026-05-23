@@ -1,5 +1,7 @@
 # Kafka Metamorphosis 🪲
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/caioclavico)
+
 ![Kafka Metamorphosis](docs/images/kafka-metamorphosis.jpg)
 
 _"When Gregor Samsa woke up one morning from unsettling dreams, he found himself changed in his bed into a monstrous vermin."_  
@@ -471,6 +473,12 @@ This project draws inspiration from Franz Kafka's "The Metamorphosis," where the
 - [jackdaw](https://github.com/FundingCircle/jackdaw) - Another Clojure Kafka library with Kafka Streams support
 - [clj-kafka](https://github.com/pingles/clj-kafka) - Alternative Clojure Kafka client
 - [franzy](https://github.com/ymilky/franzy) - Comprehensive Kafka toolkit for Clojure
+
+## ☕ Support
+
+If this library has helped you, consider buying me a coffee — it keeps the metamorphosis going! 🦋
+
+<a href="https://www.buymeacoffee.com/caioclavico" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="45"></a>
 
 ## License
 
