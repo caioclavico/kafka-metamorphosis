@@ -9,6 +9,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write  # needed to push tags and create GitHub releases
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -70,11 +73,38 @@ jobs:
 
       - name: Create git tag
         if: steps.version.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ steps.version.outputs.current }}
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v$VERSION" || echo "Tag already exists"
           git push origin "v$VERSION" || echo "Tag already pushed"
+
+      - name: Extract CHANGELOG section for this version
+        if: steps.version.outputs.changed == 'true'
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.current }}
+          # Extract the section between "## [VERSION]" and the next "## ["
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release $VERSION" > release-notes.md
+          fi
+          echo "--- release notes ---"
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        if: steps.version.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.current }}
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file release-notes.md \
+            target/kafka-metamorphosis-$VERSION.jar \
+            || echo "Release already exists or failed"
