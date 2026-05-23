@@ -1,44 +1,14 @@
 version: '3.8'
 
+# Kafka 4.x runs in KRaft mode (ZooKeeper was removed in Kafka 4.0).
 services:
-  # zookeeper:
-  #   image: bitnami/zookeeper:3.9
-  #   container_name: kafka-metamorphosis-zookeeper
-  #   ports:
-  #     - "2181:2181"
-  #   environment:
-  #     - ALLOW_ANONYMOUS_LOGIN=yes
-  #   networks:
-  #     - kafka-net
-
-  # kafka:
-  #   image: bitnami/kafka:3.4.0  # Versão que ainda usa Zookeeper por padrão
-  #   container_name: kafka-metamorphosis-broker
-  #   ports:
-  #     - "9092:9092"
-  #   environment:
-  #     - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-  #     - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-  #     - ALLOW_PLAINTEXT_LISTENER=yes
-  #   depends_on:
-  #     - zookeeper
-  #   networks:
-  #     - kafka-net
-  #   healthcheck:
-  #     test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
-  #     start_period: 60s
-
   kafka-kraft:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:4.3
     container_name: kafka-metamorphosis-kraft
     ports:
       - "9092:9092"
-      - "9093:9093"  # Porta do controller - IMPORTANTE!
+      - "9093:9093"  # Controller listener
     environment:
-      # CONFIGURAÇÃO KRAFT CORRETA:
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka-kraft:9093
@@ -47,6 +17,12 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      # Single-node overrides for internal topics
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_CFG_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_CFG_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR=1
       - ALLOW_PLAINTEXT_LISTENER=yes
     networks:
       - kafka-net
@@ -55,7 +31,7 @@ services:
       interval: 30s
       timeout: 15s
       retries: 10
-      start_period: 120s  # Kraft demora mais para iniciar
+      start_period: 120s
 
 networks:
   kafka-net:

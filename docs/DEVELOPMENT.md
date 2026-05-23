@@ -27,9 +27,9 @@ chmod +x lein
 sudo mv lein /usr/local/bin/
 lein --version
 
-# Install Kafka (optional, for testing)
-wget https://downloads.apache.org/kafka/2.8.1/kafka_2.13-2.8.1.tgz
-tar -xzf kafka_2.13-2.8.1.tgz
+# Install Kafka (optional, for testing) — Kafka 4.3.0 (KRaft mode, no ZooKeeper)
+wget https://downloads.apache.org/kafka/4.3.0/kafka_2.13-4.3.0.tgz
+tar -xzf kafka_2.13-4.3.0.tgz
 ```
 
 #### macOS
@@ -90,18 +90,19 @@ sudo mv lein /usr/local/bin/
 
 ### Testing with Kafka
 
-To test the library with a real Kafka instance:
+To test the library with a real Kafka instance. From **Kafka 4.0** onwards ZooKeeper has been removed — use KRaft mode:
 
-1. **Start Zookeeper**
+1. **Format storage (one time only)**
 
    ```bash
-   bin/zookeeper-server-start.sh config/zookeeper.properties
+   KAFKA_CLUSTER_ID="$(bin/kafka-storage.sh random-uuid)"
+   bin/kafka-storage.sh format -t "$KAFKA_CLUSTER_ID" -c config/kraft/server.properties
    ```
 
-2. **Start Kafka**
+2. **Start the broker (KRaft, combined broker+controller)**
 
    ```bash
-   bin/kafka-server-start.sh config/server.properties
+   bin/kafka-server-start.sh config/kraft/server.properties
    ```
 
 3. **Create test topic**
@@ -115,6 +116,20 @@ To test the library with a real Kafka instance:
    (require '[kafka-metamorphosis.examples :as examples])
    (examples/run-examples)
    ```
+
+#### Single-node KRaft: required replication-factor overrides
+
+The stock `config/kraft/server.properties` keeps the default replication factor of **3** for internal topics, which fails on a single-broker cluster — consumers will silently receive zero records because `__consumer_offsets` cannot be created. Add these overrides to `config/kraft/server.properties` for local dev:
+
+```properties
+offsets.topic.replication.factor=1
+transaction.state.log.replication.factor=1
+transaction.state.log.min.isr=1
+share.coordinator.state.topic.replication.factor=1
+share.coordinator.state.topic.min.isr=1
+```
+
+Symptom if missing: broker logs show `Auto topic creation failed for __consumer_offsets with error 'INVALID_REPLICATION_FACTOR'` and every consumer (including `kafka-console-consumer.sh`) returns 0 messages.
 
 ### REPL Development
 

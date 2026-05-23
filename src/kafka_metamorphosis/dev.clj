@@ -30,65 +30,9 @@
           :enable-auto-commit true}))
 
 ;; Docker Compose configuration for Kafka
-(def default-docker-compose
-  "Default docker-compose.yml content for Kafka development"
-  "version: '3.8'
-
-services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: kafka-metamorphosis-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - \"2181:2181\"
-    networks:
-      - kafka-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-metamorphosis-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - \"9092:9092\"
-      - \"29092:29092\"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
-      KAFKA_LOG4J_LOGGERS: \"kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO\"
-    networks:
-      - kafka-network
-    healthcheck:
-      test: [\"CMD-SHELL\", \"kafka-topics --bootstrap-server localhost:9092 --list\"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-metamorphosis-ui
-    depends_on:
-      - kafka
-    ports:
-      - \"8080:8080\"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-    networks:
-      - kafka-network
-
-networks:
-  kafka-network:
-    driver: bridge
-")
+;; NOTE: Kafka 4.x removed ZooKeeper support. Only KRaft-based modes are
+;; provided. The :kraft and :simple modes below both run a single-node
+;; combined broker+controller using the official `apache/kafka:4.3.0` image.
 
 ;; KRaft (Kafka without Zookeeper) configuration
 (def kraft-docker-compose
@@ -97,7 +41,7 @@ networks:
 
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.3.0
     container_name: kafka-metamorphosis-kraft
     ports:
       - \"9092:9092\"
@@ -116,13 +60,14 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
-      KAFKA_LOG4J_LOGGERS: \"kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO\"
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     networks:
       - kafka-network
     healthcheck:
-      test: [\"CMD-SHELL\", \"kafka-topics --bootstrap-server localhost:9092 --list\"]
+      test: [\"CMD-SHELL\", \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list\"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -152,7 +97,7 @@ networks:
 
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.3.0
     container_name: kafka-metamorphosis-simple
     ports:
       - \"9092:9092\"
@@ -167,10 +112,14 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     healthcheck:
-      test: [\"CMD-SHELL\", \"kafka-topics --bootstrap-server localhost:9092 --list\"]
+      test: [\"CMD-SHELL\", \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list\"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -180,29 +129,29 @@ services:
   "Get docker-compose configuration based on mode.
    
    Modes:
-   :zookeeper (default) - Traditional Kafka with Zookeeper
-   :kraft - Kafka with KRaft (no Zookeeper) 
-   :simple - Simple KRaft setup (single container, faster startup)
+   :kraft (default) - Kafka with KRaft (no Zookeeper) + Kafka UI
+   :simple - Simple KRaft setup (single container, faster startup, no UI)
+   
+   Note: ZooKeeper mode was removed in Kafka 4.x and is no longer supported.
    
    Usage:
    (get-compose-config :kraft)
    (get-compose-config :simple)"
   ([mode]
    (case mode
-     :zookeeper default-docker-compose
      :kraft kraft-docker-compose
      :simple kraft-simple-docker-compose
-     default-docker-compose)))
+     kraft-docker-compose)))
 
 (defn write-docker-compose!
   "Generate a docker-compose.yml file in the project root.
    
    Usage:
-   (write-docker-compose!)                    ; Use default (zookeeper) configuration
-   (write-docker-compose! :kraft)             ; Use KRaft mode
-   (write-docker-compose! :simple)            ; Use simple KRaft mode
+   (write-docker-compose!)                    ; Use default (kraft) configuration
+   (write-docker-compose! :kraft)             ; Use KRaft mode (Kafka + UI)
+   (write-docker-compose! :simple)            ; Use simple KRaft mode (Kafka only)
    (write-docker-compose! custom-content)     ; Use custom configuration string"
-  ([] (write-docker-compose! :zookeeper))
+  ([] (write-docker-compose! :kraft))
   ([mode-or-content]
    (let [content (if (keyword? mode-or-content)
                    (get-compose-config mode-or-content)
@@ -217,11 +166,11 @@ services:
    Generates docker-compose.yml if it doesn't exist.
    
    Usage:
-   (kafka-docker-up!)                         ; Use default (zookeeper) configuration
-   (kafka-docker-up! :kraft)                  ; Use KRaft mode (no Zookeeper)
+   (kafka-docker-up!)                         ; Use default (kraft) configuration
+   (kafka-docker-up! :kraft)                  ; Use KRaft mode (Kafka + UI)
    (kafka-docker-up! :simple)                 ; Use simple KRaft mode
    (kafka-docker-up! custom-compose-content)  ; Use custom configuration string"
-  ([] (kafka-docker-up! :zookeeper))
+  ([] (kafka-docker-up! :kraft))
   ([mode-or-content]
    (when-not (.exists (io/file "docker-compose.yml"))
      (write-docker-compose! mode-or-content))
@@ -368,16 +317,16 @@ services:
   "Complete development setup: start Kafka, wait for it to be ready, and create common topics.
    
    Usage:
-   (kafka-dev-setup!)                                    ; Default: Zookeeper mode with default topics
+   (kafka-dev-setup!)                                    ; Default: KRaft mode with default topics
    (kafka-dev-setup! :kraft)                            ; KRaft mode with default topics
    (kafka-dev-setup! :simple)                           ; Simple KRaft mode with default topics
-   (kafka-dev-setup! [\"topic1\" \"topic2\"])               ; Zookeeper mode with custom topics
+   (kafka-dev-setup! [\"topic1\" \"topic2\"])               ; KRaft mode with custom topics
    (kafka-dev-setup! :kraft [\"topic1\" \"topic2\"])        ; KRaft mode with custom topics"
-  ([] (kafka-dev-setup! :zookeeper ["dev-topic" "test-topic" "metamorphosis-topic"]))
+  ([] (kafka-dev-setup! :kraft ["dev-topic" "test-topic" "metamorphosis-topic"]))
   ([mode-or-topics] 
    (if (keyword? mode-or-topics)
      (kafka-dev-setup! mode-or-topics ["dev-topic" "test-topic" "metamorphosis-topic"])
-     (kafka-dev-setup! :zookeeper mode-or-topics)))
+     (kafka-dev-setup! :kraft mode-or-topics)))
   ([mode topics]
    (let [mode-name (name mode)]
      (println "🪲 Setting up Kafka development environment (" mode-name "mode)...")
@@ -399,23 +348,14 @@ services:
        (println "📝 Available topics:" (clojure.string/join ", " topics))
        (println "🏗️ Architecture:" 
                 (case mode
-                  :zookeeper "Traditional Kafka + Zookeeper"
-                  :kraft "KRaft mode (no Zookeeper)"
+                  :kraft "KRaft mode (Kafka 4.x, no Zookeeper)"
                   :simple "Simple KRaft (minimal setup)"
                   "Custom configuration"))))))
 
 ;; Convenience functions for different modes
-(defn kafka-up-zookeeper!
-  "Start Kafka with traditional Zookeeper mode.
-   
-   Usage:
-   (kafka-up-zookeeper!)              ; Start with Zookeeper + Kafka UI"
-  []
-  (kafka-docker-up! :zookeeper))
-
 (defn kafka-up-kraft!
-  "Start Kafka with KRaft mode (no Zookeeper).
-   Modern Kafka architecture without Zookeeper dependency.
+  "Start Kafka with KRaft mode.
+   Modern Kafka architecture (Kafka 4.x, no Zookeeper).
    
    Usage:
    (kafka-up-kraft!)                  ; Start with KRaft + Kafka UI"
@@ -431,18 +371,8 @@ services:
   []
   (kafka-docker-up! :simple))
 
-(defn kafka-setup-zookeeper!
-  "Complete setup with traditional Zookeeper mode.
-   
-   Usage:
-   (kafka-setup-zookeeper!)           ; Setup with default topics
-   (kafka-setup-zookeeper! [\"topic1\"]) ; Setup with custom topics"
-  ([] (kafka-dev-setup! :zookeeper))
-  ([topics] (kafka-dev-setup! :zookeeper topics)))
-
 (defn kafka-setup-kraft!
-  "Complete setup with KRaft mode (no Zookeeper).
-   Modern Kafka architecture.
+  "Complete setup with KRaft mode (Kafka 4.x).
    
    Usage:
    (kafka-setup-kraft!)               ; Setup with default topics
@@ -573,10 +503,11 @@ services:
     (println "✅ Done reading messages")))
 
 (comment
-  ;; KAFKA DOCKER SETUP - Choose your architecture:
+  ;; KAFKA DOCKER SETUP - Kafka 4.x runs in KRaft mode only.
+  ;; (ZooKeeper support was removed in Kafka 4.0.)
   
-  ;; === OPTION 1: Modern KRaft mode (No Zookeeper) ===
-  ;; Fastest, simplest, modern Kafka architecture
+  ;; === OPTION 1: Modern KRaft mode (default) ===
+  ;; Kafka + Kafka UI on http://localhost:8080
   (kafka-setup-kraft!)                    ; Complete setup with KRaft
   (kafka-up-kraft!)                       ; Just start Kafka with KRaft
   
@@ -585,14 +516,9 @@ services:
   (kafka-setup-simple!)                   ; Minimal complete setup
   (kafka-up-simple!)                      ; Just start minimal Kafka
   
-  ;; === OPTION 3: Traditional Zookeeper mode ===
-  ;; Classic Kafka architecture
-  (kafka-setup-zookeeper!)                ; Complete setup with Zookeeper
-  (kafka-up-zookeeper!)                   ; Just start Kafka with Zookeeper
-  
   ;; === GENERIC METHODS ===
   ;; Complete setup with mode selection
-  (kafka-dev-setup!)                      ; Default: Zookeeper mode
+  (kafka-dev-setup!)                      ; Default: KRaft mode
   (kafka-dev-setup! :kraft)               ; KRaft mode
   (kafka-dev-setup! :simple)              ; Simple KRaft mode
   (kafka-dev-setup! :kraft ["my-topic"])  ; KRaft with custom topics

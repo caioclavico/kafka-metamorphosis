@@ -3,6 +3,32 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-22
+### Changed (Breaking)
+- **ZooKeeper helpers removed** from `kafka-metamorphosis.dev`: `kafka-up-zookeeper!` and `kafka-setup-zookeeper!` no longer exist. Kafka 4.x dropped ZooKeeper support, so only KRaft is supported.
+- `kafka-dev-setup!` default mode is now `:kraft` (was `:zookeeper`).
+- `:zookeeper` mode removed from `write-docker-compose!`, `kafka-docker-up!`, and `get-compose-config`.
+
+### Updated
+- Docker images bumped to `apache/kafka:4.3.0` in generated compose files and to `bitnami/kafka:4.3` in the workspace `docker-compose.yml`.
+- Generated compose includes all single-node replication-factor overrides (offsets, transaction state log, share coordinator).
+- Documentation overhauled: `DOCKER_SETUP.md`, `KRAFT_MODE.md`, `DEVELOPMENT.md`, and `README.md` no longer reference ZooKeeper as a supported mode.
+
+### Migration
+- Replace `(dev/kafka-setup-zookeeper!)` with `(dev/kafka-setup-kraft!)` or `(dev/kafka-setup-simple!)`.
+- For local single-node KRaft brokers, ensure `offsets.topic.replication.factor=1` (and friends) are set; see `docs/DEVELOPMENT.md`.
+
+## [0.4.1] - 2026-05-22
+### Changed
+- **Kafka clients upgraded to 4.3.0** (`org.apache.kafka/kafka-clients`). The 4.x client is wire-compatible with Kafka 3.x brokers; ZooKeeper-only brokers (Kafka < 2.8) are no longer supported.
+
+### Fixed
+- **Integration tests**: consumer-group assignment race made polls return zero records intermittently. Tests now use a unique `group-id` per run and a `consume-until` loop that polls in 1s batches until the expected message count or timeout is reached.
+
+### Documentation
+- README and Java interop docs updated to version 0.4.1 with a note about Kafka 4.x / KRaft compatibility.
+- New troubleshooting note for single-node KRaft brokers (`offsets.topic.replication.factor=1`).
+
 ## [0.4.0] - 2025-09-02
 ### Added - Topic-Scoped Schema Validation with Strict Enforcement 🎯
 - **Topic-Scoped Schemas**: Schema definition using `:topic-name/schema-id` convention (e.g., `:users/default`, `:orders/profile`)

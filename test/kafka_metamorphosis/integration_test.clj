@@ -52,6 +52,23 @@
 (def test-topic "integration-test-topic")
 (def test-group-id "integration-test-group")
 
+(defn fresh-group-id
+  "Generate a unique consumer group id to avoid reusing committed offsets across test runs."
+  [suffix]
+  (str test-group-id "-" suffix "-" (System/currentTimeMillis)))
+
+(defn consume-until
+  "Poll in small intervals, accumulating records until expected-count or timeout-ms.
+   This avoids flaky single-poll reads when group assignment takes longer."
+  [consumer timeout-ms expected-count]
+  (let [deadline (+ (System/currentTimeMillis) timeout-ms)]
+    (loop [acc []]
+      (if (or (>= (count acc) expected-count)
+              (>= (System/currentTimeMillis) deadline))
+        acc
+        (let [batch (or (consumer/poll! consumer 1000) [])]
+          (recur (into acc batch)))))))
+
 (defn setup-test-environment!
   "Setup test environment with topic and schemas"
   []
@@ -60,6 +77,8 @@
       ;; Create test topic
       (admin/create-topic-if-not-exists! admin-client test-topic
                                          {:partitions 3 :replication-factor 1})
+      ;; Give cluster metadata a brief moment to propagate topic availability.
+      (Thread/sleep 1000)
       
       ;; Setup test schemas
       (schema/defschema :integration-test-topic/default
@@ -107,7 +126,7 @@
                           :key-serializer "org.apache.kafka.common.serialization.StringSerializer"
                           :value-serializer "org.apache.kafka.common.serialization.StringSerializer"}
           consumer-config {:bootstrap-servers "localhost:9092"
-                          :group-id (str test-group-id "-basic")
+                          :group-id (fresh-group-id "basic")
                           :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :auto-offset-reset "earliest"}
@@ -127,7 +146,7 @@
         (consumer/subscribe! consumer [test-topic])
         (Thread/sleep 1000) ; Give some time for subscription
         
-        (let [records (consumer/poll! consumer 5000)
+          (let [records (consume-until consumer 10000 5)
               messages (map :value records)]
           
           (is (= 5 (count records)) "Should receive 5 messages")
@@ -147,7 +166,7 @@
                           :value-serializer "org.apache.kafka.common.serialization.StringSerializer"
                           :schemas true}  ; Auto validation!
           consumer-config {:bootstrap-servers "localhost:9092"
-                          :group-id (str test-group-id "-auto-schema")
+                          :group-id (fresh-group-id "auto-schema")
                           :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :auto-offset-reset "earliest"
@@ -182,7 +201,7 @@
         (consumer/subscribe! consumer [test-topic])
         (Thread/sleep 1000)
         
-        (let [records (consumer/poll! consumer 5000)]
+        (let [records (consume-until consumer 10000 1)]
           (is (= 1 (count records)) "Should receive only 1 valid message")
           
           (when (seq records)
@@ -205,7 +224,7 @@
                           :schemas {test-topic :integration-test-topic/default
                                    "orders-test" :orders-test}}
           consumer-config {:bootstrap-servers "localhost:9092"
-                          :group-id (str test-group-id "-mapping")
+                          :group-id (fresh-group-id "mapping")
                           :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :auto-offset-reset "earliest"
@@ -241,7 +260,7 @@
         (consumer/subscribe! consumer [test-topic])
         (Thread/sleep 1000)
         
-        (let [records (consumer/poll! consumer 5000)]
+        (let [records (consume-until consumer 10000 1)]
           (is (= 1 (count records)) "Should receive only 1 valid message")
           
           (when (seq records)
@@ -262,7 +281,7 @@
                           :value-serializer "org.apache.kafka.common.serialization.StringSerializer"
                           :schemas {test-topic :integration-test-topic/user-profile}}
           consumer-config {:bootstrap-servers "localhost:9092"
-                          :group-id (str test-group-id "-multi-schema")
+                          :group-id (fresh-group-id "multi-schema")
                           :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :auto-offset-reset "earliest"
@@ -292,7 +311,7 @@
         (consumer/subscribe! consumer [test-topic])
         (Thread/sleep 1000)
         
-        (let [records (consumer/poll! consumer 5000)
+          (let [records (consume-until consumer 10000 3)
               consumed-users (map #(-> % :value (serializers/from-json)) records)]
           
           (is (= 3 (count records)) "Should receive 3 valid user messages")
@@ -386,7 +405,7 @@
     
     ;; Now consume with validation enabled - should filter invalid messages
     (let [consumer-config {:bootstrap-servers "localhost:9092"
-                          :group-id (str test-group-id "-filter")
+                          :group-id (fresh-group-id "filter")
                           :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
                           :auto-offset-reset "earliest"

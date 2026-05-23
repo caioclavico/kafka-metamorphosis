@@ -44,29 +44,26 @@
 
 (deftest test-docker-compose-configurations
   (testing "Docker compose configurations exist and are strings"
-    (is (string? dev/default-docker-compose))
     (is (string? dev/kraft-docker-compose))
     (is (string? dev/kraft-simple-docker-compose))
     
-    ;; Check that they contain expected services
-    (is (str/includes? dev/default-docker-compose "zookeeper:"))
-    (is (str/includes? dev/default-docker-compose "kafka:"))
-    (is (str/includes? dev/default-docker-compose "kafka-ui:"))
-    
+    ;; Both modes are KRaft-based (Kafka 4.x removed ZooKeeper).
     (is (str/includes? dev/kraft-docker-compose "kafka:"))
     (is (str/includes? dev/kraft-docker-compose "kafka-ui:"))
     (is (not (str/includes? dev/kraft-docker-compose "zookeeper:")))
+    (is (str/includes? dev/kraft-docker-compose "apache/kafka:4.3.0"))
     
     (is (str/includes? dev/kraft-simple-docker-compose "kafka:"))
     (is (not (str/includes? dev/kraft-simple-docker-compose "kafka-ui:")))
-    (is (not (str/includes? dev/kraft-simple-docker-compose "zookeeper:")))))
+    (is (not (str/includes? dev/kraft-simple-docker-compose "zookeeper:")))
+    (is (str/includes? dev/kraft-simple-docker-compose "apache/kafka:4.3.0"))))
 
 (deftest test-get-compose-config
   (testing "Get compose configuration by mode"
-    (is (= dev/default-docker-compose (dev/get-compose-config :zookeeper)))
     (is (= dev/kraft-docker-compose (dev/get-compose-config :kraft)))
     (is (= dev/kraft-simple-docker-compose (dev/get-compose-config :simple)))
-    (is (= dev/default-docker-compose (dev/get-compose-config :unknown)))))
+    ;; Unknown modes fall back to the default KRaft setup.
+    (is (= dev/kraft-docker-compose (dev/get-compose-config :unknown)))))
 
 ;; ============================================================================
 ;; File Operations Tests
@@ -86,7 +83,7 @@
         ;; Test default mode
         (with-redefs [dev/write-docker-compose! 
                       (fn 
-                        ([] (dev/write-docker-compose! :zookeeper))
+                        ([] (dev/write-docker-compose! :kraft))
                         ([mode-or-content]
                          (let [content (if (keyword? mode-or-content)
                                          (dev/get-compose-config mode-or-content)
@@ -137,18 +134,12 @@
 (deftest test-convenience-functions
   (testing "Convenience functions for different modes"
     (with-redefs [dev/kafka-docker-up! (fn [mode] mode)]
-      (is (= :zookeeper (dev/kafka-up-zookeeper!)))
       (is (= :kraft (dev/kafka-up-kraft!)))
       (is (= :simple (dev/kafka-up-simple!))))
     
     (with-redefs [dev/kafka-dev-setup! (fn 
                                          ([mode] [mode ["dev-topic" "test-topic" "metamorphosis-topic"]])
                                          ([mode topics] [mode topics]))]
-      (is (= [:zookeeper ["dev-topic" "test-topic" "metamorphosis-topic"]] 
-             (dev/kafka-setup-zookeeper!)))
-      (is (= [:zookeeper ["custom-topic"]] 
-             (dev/kafka-setup-zookeeper! ["custom-topic"])))
-      
       (is (= [:kraft ["dev-topic" "test-topic" "metamorphosis-topic"]] 
              (dev/kafka-setup-kraft!)))
       (is (= [:kraft ["custom-topic"]] 
@@ -210,7 +201,7 @@
         (with-redefs [dev/kafka-docker-up! (fn [mode] (swap! calls conj [:up mode]))
                       dev/setup-dev-topic (fn [topic opts] (swap! calls conj [:topic topic opts]))]
           (dev/kafka-dev-setup!)
-          (is (= [[:up :zookeeper]] (filter #(= :up (first %)) @calls)))
+          (is (= [[:up :kraft]] (filter #(= :up (first %)) @calls)))
           (is (= 3 (count (filter #(= :topic (first %)) @calls))))))
       
       ;; Test with mode only
@@ -224,7 +215,7 @@
         (with-redefs [dev/kafka-docker-up! (fn [mode] (swap! calls conj [:up mode]))
                       dev/setup-dev-topic (fn [topic _opts] (swap! calls conj [:topic topic]))]
           (dev/kafka-dev-setup! ["custom-topic"])
-          (is (= [[:up :zookeeper]] (filter #(= :up (first %)) @calls)))
+          (is (= [[:up :kraft]] (filter #(= :up (first %)) @calls)))
           (is (= [[:topic "custom-topic"]] (filter #(= :topic (first %)) @calls)))))
       
       ;; Test with mode and topics

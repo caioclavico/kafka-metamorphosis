@@ -1,26 +1,19 @@
-# KRaft Mode - Kafka without Zookeeper
+# KRaft Mode - The only mode in Kafka 4.x
 
 ## 🆕 What is KRaft?
 
-KRaft (Kafka Raft) is the new Apache Kafka architecture that **eliminates the Zookeeper dependency**. Available since Kafka 2.8 and stable since 3.3.
+KRaft (Kafka Raft) is the Apache Kafka architecture that **eliminates the Zookeeper dependency**. It is the default and **only** mode supported by Kafka 4.x — ZooKeeper was removed in Kafka 4.0.
 
 ### ✅ KRaft Advantages
 
 - **🚀 Faster startup** - Fewer components to initialize
 - **📦 Less complexity** - One less component to manage
-- **🔧 Simplified configuration** - No need to configure Zookeeper
+- **🔧 Simplified configuration** - No Zookeeper to configure
 - **⚡ Better performance** - Metadata managed directly by Kafka
-- **🎯 Future of Kafka** - Zookeeper will be discontinued
-
-### ❌ Current Limitations
-
-- **🧪 Relatively new** - Less time in production
-- **📚 Less documentation** - Community still migrating
-- **🔌 Some tools** - May not fully support it yet
 
 ## 🚀 How to Use in Kafka Metamorphosis
 
-### Complete KRaft Mode
+### Complete KRaft Mode (Kafka + UI)
 
 ```clojure
 ;; Complete setup with KRaft + Kafka UI
@@ -36,23 +29,14 @@ KRaft (Kafka Raft) is the new Apache Kafka architecture that **eliminates the Zo
 ### Simple KRaft Mode (Recommended for Tests)
 
 ```clojure
-;; Minimalist setup - super fast
+;; Minimalist setup - super fast, no UI
 (dev/kafka-setup-simple!)
 
 ;; Just start Kafka without UI
 (dev/kafka-up-simple!)
 ```
 
-## 🏗️ KRaft vs Zookeeper Architecture
-
-### Traditional (Zookeeper)
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Zookeeper  │    │    Kafka    │    │  Kafka UI   │
-│   :2181     │◄──►│   :9092     │◄──►│   :8080     │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
+## 🏗️ Architectures
 
 ### KRaft Mode
 
@@ -81,12 +65,17 @@ KRaft (Kafka Raft) is the new Apache Kafka architecture that **eliminates the Zo
 ```yaml
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.3.0
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:29093"
-      # ... without Zookeeper
+      # Single-node replication overrides
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
 
   kafka-ui:
     # Web interface at localhost:8080
@@ -97,12 +86,12 @@ services:
 ```yaml
 services:
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: apache/kafka:4.3.0
     ports:
       - "9092:9092"
     environment:
       KAFKA_PROCESS_ROLES: "broker,controller"
-      # ... minimal configuration
+      # … minimal single-node configuration
 ```
 
 ## 🛠️ Recommended Workflow
@@ -176,26 +165,18 @@ services:
 - ✅ Local development
 - ✅ Automated tests
 - ✅ New projects
-- ✅ Want faster startup
+- ✅ Any project targeting Kafka 4.x (mandatory)
 
-### Use Zookeeper When:
+## 🪲 Migration from ZooKeeper
 
-- ⚠️ Critical production environment
-- ⚠️ Legacy tools that don't support KRaft
-- ⚠️ Compliance with existing setup
-
-## 🦋 Future Migration
-
-Kafka Metamorphosis facilitates migration:
+If you used `kafka-setup-zookeeper!` in older versions, switch to KRaft — application code stays the same:
 
 ```clojure
-;; Currently using Zookeeper
-(dev/kafka-setup-zookeeper!)
+;; Previously (Kafka 3.x)
+;; (dev/kafka-setup-zookeeper!)
 
-;; Migrate to KRaft (same API)
+;; Now (Kafka 4.x — KRaft only)
 (dev/kafka-setup-kraft!)
-
-;; Application code remains the same!
 ```
 
 Kafka's metamorphosis eliminates Zookeeper complexity! 🪲➡️🦋

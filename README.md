@@ -31,14 +31,16 @@ Add this to your `project.clj` dependencies:
 Or for deps.edn:
 
 ```clojure
-org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.0"}
+org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.3"}
 ```
 
 For tools.deps CLI:
 
 ```clojure
-clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.0"}}}'
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.3"}}}'
 ```
+
+> Built against `org.apache.kafka/kafka-clients` **4.3.0**. The 4.x client is wire-compatible with Kafka 3.x brokers; if you target Kafka 4.x brokers, use **KRaft mode** (ZooKeeper was removed in Kafka 4.0).
 
 ## Documentation
 
@@ -47,6 +49,7 @@ clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0
 - [🆕 KRaft Mode Guide](docs/KRAFT_MODE.md) - Modern Kafka without Zookeeper 
 - [📋 Topic Creation Guide](docs/TOPIC_CREATION.md) - Comprehensive topic management
 - [🛡️ Schema Validation Guide](docs/SCHEMA_VALIDATION.md) - Message schema validation and error handling
+- [☕ Java Interop Guide](docs/JAVA_INTEROP.md) - Using kafka-metamorphosis with Java/Spring Boot
 
 ## Quick Start
 
@@ -201,11 +204,11 @@ The easiest way to get started is using the built-in Docker development environm
 ```clojure
 (require '[kafka-metamorphosis.dev :as dev])
 
-;; KRaft mode (modern, no Zookeeper)
+;; KRaft mode (Kafka 4.x, no Zookeeper)
 (dev/kafka-setup-kraft!)
 
-;; Traditional mode with Zookeeper
-(dev/kafka-setup-zookeeper!)
+;; Minimal KRaft (single container, no UI)
+(dev/kafka-setup-simple!)
 
 ;; Schema Registry + Kafka + UI
 (dev/kafka-setup-full!)
@@ -354,6 +357,55 @@ For fine-grained control:
       "clicks" (process-click msg)  
       "purchases" (process-purchase msg))))
 ```
+
+### Java Producer Example
+
+Using kafka-metamorphosis from Java or Spring Boot:
+
+```java
+import io.github.caioclavico.kafkametamorphosis.KafkaProducerWrapper;
+import io.github.caioclavico.kafkametamorphosis.KafkaConfig;
+import java.util.Map;
+
+// Simple usage - uses default localhost:9092
+try (KafkaProducerWrapper producer = new KafkaProducerWrapper()) {
+    producer.publish("orders", "order-123", "{\"user\":\"john\",\"amount\":99.99}");
+}
+
+// With custom configuration
+Map<String, Object> config = KafkaConfig.create()
+    .bootstrapServers("broker1:9092,broker2:9092")
+    .acks("all")
+    .retries(5)
+    .keySerializer("org.apache.kafka.common.serialization.StringSerializer")
+    .valueSerializer("org.apache.kafka.common.serialization.StringSerializer")
+    .toMap();
+
+try (KafkaProducerWrapper producer = new KafkaProducerWrapper(config)) {
+    producer.publishJson("events", "evt-456", "{\"type\":\"purchase\",\"value\":150.00}");
+}
+
+// Spring Boot integration
+@Configuration
+public class KafkaBeans {
+    @Bean(destroyMethod = "close")
+    public KafkaProducerWrapper kafkaProducer() {
+        return new KafkaProducerWrapper("localhost:9092");
+    }
+}
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+    private final KafkaProducerWrapper producer;
+    
+    public void publishOrder(Order order) {
+        producer.publishJson("orders", order.getId(), toJson(order));
+    }
+}
+```
+
+For more details, see the [☕ Java Interop Guide](docs/JAVA_INTEROP.md).
 
 ## Contributing
 
