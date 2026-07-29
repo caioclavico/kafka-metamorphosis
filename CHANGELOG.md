@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-29
+
 ## [0.4.4] - 2026-07-29
 ### Fixed
 - **Integration tests**: `create-topic!` now retries when Kafka reports a topic as "marked for deletion", instead of failing immediately with `TopicExistsException`.
