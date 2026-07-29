@@ -2,6 +2,8 @@
   "Administrative functions for Kafka - topic management, cluster info, etc."
   (:require [kafka-metamorphosis.util :as util])
   (:import [org.apache.kafka.clients.admin AdminClient NewTopic]
+           [org.apache.kafka.common.errors TopicExistsException]
+           [java.util.concurrent ExecutionException]
            [java.util Collection Collections]))
 
 (defn create-admin-client
@@ -14,6 +16,20 @@
         props (util/map->properties normalized-config)]
     (AdminClient/create props)))
 
+(defn wait-for-topic-deletion!
+  "Wait for the named topic to disappear if it is pending deletion.
+   Returns true when the topic no longer exists, false if the timeout expires."
+  [admin-client topic-name & {:keys [timeout-ms interval-ms]
+                              :or {timeout-ms 30000 interval-ms 2000}}]
+  (let [deadline (+ (System/currentTimeMillis) timeout-ms)]
+    (loop []
+      (if (or (not (topic-exists? admin-client topic-name))
+              (> (System/currentTimeMillis) deadline))
+        (not (topic-exists? admin-client topic-name))
+        (do
+          (Thread/sleep interval-ms)
+          (recur))))))
+
 (defn create-topic!
   "Create a new Kafka topic.
    
@@ -25,7 +41,7 @@
    Usage:
    (create-topic! admin-client \"my-topic\")
    (create-topic! admin-client \"my-topic\" {:partitions 3 :replication-factor 2})
-   (create-topic! admin-client \"my-topic\" {:partitions 3 
+   (create-topic! admin-topic admin-client \"my-topic\" {:partitions 3 
                                             :configs {\"cleanup.policy\" \"compact\"}})"
   ([admin-client topic-name]
    (create-topic! admin-client topic-name {}))
@@ -34,9 +50,32 @@
    (let [new-topic (NewTopic. topic-name partitions (short replication-factor))]
      (when (seq configs)
        (.configs new-topic configs))
-     (let [result (.createTopics admin-client [new-topic])]
-       (.get (.all result))
-       (println "✅ Topic" topic-name "created successfully")))))
+     (try
+       (let [result (.createTopics admin-client [new-topic])]
+         (.get (.all result))
+         (println "✅ Topic" topic-name "created successfully"))
+       (catch ExecutionException e
+         (let [cause (.getCause e)]
+           (if (instance? TopicExistsException cause)
+             (do
+               (println "⚠️ Topic" topic-name "already exists or is pending deletion; checking status...")
+               (if (wait-for-topic-deletion! admin-client topic-name)
+                 (do
+                   (println "🔄 Topic" topic-name "deletion completed; recreating...")
+                   (let [result (.createTopics admin-client [new-topic])]
+                     (.get (.all result))
+                     (println "✅ Topic" topic-name "created successfully")))
+                 (println "ℹ️ Topic" topic-name "still exists after waiting; skipping create")))
+             (throw e))))
+       (catch TopicExistsException _e
+         (println "⚠️ Topic" topic-name "already exists or is pending deletion; checking status...")
+         (if (wait-for-topic-deletion! admin-client topic-name)
+           (do
+             (println "🔄 Topic" topic-name "deletion completed; recreating...")
+             (let [result (.createTopics admin-client [new-topic])]
+               (.get (.all result))
+               (println "✅ Topic" topic-name "created successfully")))
+           (println "ℹ️ Topic" topic-name "still exists after waiting; skipping create"))))))
 
 (defn delete-topic!
   "Delete a Kafka topic.

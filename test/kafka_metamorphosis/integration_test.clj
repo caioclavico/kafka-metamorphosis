@@ -116,7 +116,12 @@
     (try
       ;; Delete test topic if it exists
       (when (admin/topic-exists? admin-client test-topic)
-        (admin/delete-topic! admin-client test-topic))
+        (admin/delete-topic! admin-client test-topic)
+        (loop [deadline (+ (System/currentTimeMillis) 30000)]
+          (when (and (> deadline (System/currentTimeMillis))
+                     (admin/topic-exists? admin-client test-topic))
+            (Thread/sleep 1000)
+            (recur deadline))))
       (finally
         (admin/close! admin-client)))))
 
