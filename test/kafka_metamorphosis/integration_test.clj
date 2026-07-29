@@ -41,7 +41,7 @@
 (defmacro deftest-integration
   "Define an integration test that only runs if Kafka is available"
   [name & body]
-  `(deftest ~name
+  `(deftest ^:integration ~name
      (skip-if-kafka-unavailable
        (fn [] ~@body))))
 

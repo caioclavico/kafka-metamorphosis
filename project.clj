@@ -40,6 +40,8 @@
 
   :main ^:skip-aot kafka-metamorphosis.core
   :target-path "target/%s"
+  :test-selectors {:default (complement :integration)
+                   :integration :integration}
 
   ;; AOT-compile the Clojure namespaces that emit Java-callable classes via gen-class.
   ;; These produce the public Java API classes under
