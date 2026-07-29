@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-29
+### Fixed
+- **Integration tests**: `create-topic!` now retries when Kafka reports a topic as "marked for deletion", instead of failing immediately with `TopicExistsException`.
+
 ## [0.4.3] - 2026-05-22
 ### Changed (Breaking)
 - **ZooKeeper helpers removed** from `kafka-metamorphosis.dev`: `kafka-up-zookeeper!` and `kafka-setup-zookeeper!` no longer exist. Kafka 4.x dropped ZooKeeper support, so only KRaft is supported.
