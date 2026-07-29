@@ -8,8 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-java:
+    name: Build on Java ${{ matrix.java-version }}
     runs-on: ubuntu-latest
+    env:
+      SKIP_INTEGRATION_TESTS: true
     concurrency:
       group: ci-${{ github.ref }}
       cancel-in-progress: true
@@ -47,8 +50,8 @@ jobs:
       - name: lein test
         run: lein test :default
 
-  integration:
-    needs: build
+  integration-tests:
+    needs: build-java
     runs-on: ubuntu-latest
     services:
       zookeeper:

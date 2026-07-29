@@ -38,12 +38,18 @@
       (println "⚠️  Skipping integration test - Kafka not available at localhost:9092")
       (is true "Kafka not available - test skipped"))))
 
+(defn integration-tests-enabled?
+  "Return true when integration tests should be defined and considered by the runner."
+  []
+  (not= "true" (System/getenv "SKIP_INTEGRATION_TESTS")))
+
 (defmacro deftest-integration
   "Define an integration test that only runs if Kafka is available"
   [name & body]
-  `(deftest ^:integration ~name
-     (skip-if-kafka-unavailable
-       (fn [] ~@body))))
+  (when (integration-tests-enabled?)
+    `(deftest ^:integration ~name
+       (skip-if-kafka-unavailable
+         (fn [] ~@body)))))
 
 ;; =============================================================================
 ;; Test Setup and Teardown
