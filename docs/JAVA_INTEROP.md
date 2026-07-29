@@ -282,7 +282,7 @@ The Maven coordinates that Java consumers will use:
 ```
 groupId:    org.clojars.caioclavico
 artifactId: kafka-metamorphosis
-version:    0.4.5   (whatever is in project.clj)
+version:    0.4.6   (whatever is in project.clj)
 ```
 
 For wider discoverability you can also mirror to **Maven Central** via
@@ -306,7 +306,7 @@ contain the metadata Central requires.
 <dependency>
   <groupId>org.clojars.caioclavico</groupId>
   <artifactId>kafka-metamorphosis</artifactId>
-  <version>0.4.5</version>
+  <version>0.4.6</version>
 </dependency>
 ```
 
@@ -319,7 +319,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.clojars.caioclavico:kafka-metamorphosis:0.4.5")
+    implementation("org.clojars.caioclavico:kafka-metamorphosis:0.4.6")
 }
 ```
 
