@@ -48,7 +48,7 @@ org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.7"}
 For tools.deps CLI:
 
 ```clojure
-clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.7"}}}'
+clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0.4.8"}}}'
 ```
 
 > Built against `org.apache.kafka/kafka-clients` **4.3.0**. The 4.x client is wire-compatible with Kafka 3.x brokers; if you target Kafka 4.x brokers, use **KRaft mode** (ZooKeeper was removed in Kafka 4.0).
