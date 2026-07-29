@@ -1,6 +1,7 @@
 (ns kafka-metamorphosis.admin
   "Administrative functions for Kafka - topic management, cluster info, etc."
-  (:require [kafka-metamorphosis.util :as util])
+  (:require [clojure.string :as str]
+            [kafka-metamorphosis.util :as util])
   (:import [org.apache.kafka.clients.admin AdminClient NewTopic]
            [org.apache.kafka.common.errors TopicExistsException]
            [java.util.concurrent ExecutionException]
@@ -32,16 +33,42 @@
           (Thread/sleep (long interval-ms))
           (recur))))))
 
-(defn- retry-create-topic-after-deletion!
+(defn- topic-pending-deletion?
+  [exception]
+  (let [cause (if (instance? ExecutionException exception)
+                (.getCause ^ExecutionException exception)
+                exception)]
+    (and (instance? TopicExistsException cause)
+         (str/includes? (or (.getMessage ^Throwable cause) "") "marked for deletion"))))
+
+(defn- retry-while-topic-pending-deletion!
+  [operation timeout-ms interval-ms]
+  (let [deadline (+ (System/currentTimeMillis) timeout-ms)]
+    (loop [first-attempt? true]
+      (let [attempt (try
+                      {:succeeded? true :value (operation)}
+                      (catch Exception exception
+                        (if (topic-pending-deletion? exception)
+                          {:succeeded? false :exception exception}
+                          (throw exception))))]
+        (if (:succeeded? attempt)
+          (:value attempt)
+          (if (>= (System/currentTimeMillis) deadline)
+            (throw (:exception attempt))
+            (do
+              (when first-attempt?
+                (println "⚠️ Topic is pending deletion; waiting to recreate..."))
+              (Thread/sleep (long interval-ms))
+              (recur false))))))))
+
+(defn- create-new-topic!
   [admin-client topic-name new-topic]
-  (println "⚠️ Topic" topic-name "already exists or is pending deletion; checking status...")
-  (if (wait-for-topic-deletion! admin-client topic-name)
-    (do
-      (println "🔄 Topic" topic-name "deletion completed; recreating...")
-      (let [result (.createTopics admin-client [new-topic])]
-        (.get (.all result))
-        (println "✅ Topic" topic-name "created successfully")))
-    (println "ℹ️ Topic" topic-name "still exists after waiting; skipping create")))
+  (retry-while-topic-pending-deletion!
+    #(let [result (.createTopics admin-client [new-topic])]
+       (.get (.all result)))
+    30000
+    1000)
+  (println "✅ Topic" topic-name "created successfully"))
 
 (defn create-topic!
   "Create a new Kafka topic.
@@ -63,17 +90,7 @@
    (let [new-topic (NewTopic. topic-name partitions (short replication-factor))]
      (when (seq configs)
        (.configs new-topic configs))
-     (try
-       (let [result (.createTopics admin-client [new-topic])]
-         (.get (.all result))
-         (println "✅ Topic" topic-name "created successfully"))
-       (catch ExecutionException e
-         (let [cause (.getCause e)]
-           (if (instance? TopicExistsException cause)
-             (retry-create-topic-after-deletion! admin-client topic-name new-topic)
-             (throw e))))
-       (catch TopicExistsException _e
-          (retry-create-topic-after-deletion! admin-client topic-name new-topic))))))
+     (create-new-topic! admin-client topic-name new-topic))))
 
 (defn delete-topic!
   "Delete a Kafka topic.

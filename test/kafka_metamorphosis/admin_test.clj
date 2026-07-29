@@ -2,7 +2,20 @@
   "Simple test to verify admin functions work"
   (:require [clojure.test :refer [deftest testing is]]
             [kafka-metamorphosis.admin :as admin]
-            [kafka-metamorphosis.core :as core]))
+            [kafka-metamorphosis.core :as core])
+  (:import [java.util.concurrent ExecutionException]
+           [org.apache.kafka.common.errors TopicExistsException]))
+
+(deftest test-retry-while-topic-pending-deletion
+  (testing "Retries wrapped pending-deletion errors until topic creation succeeds"
+    (let [attempts (atom 0)
+          operation #(if (< (swap! attempts inc) 3)
+                       (throw (ExecutionException.
+                                (TopicExistsException. "Topic is marked for deletion.")))
+                       :created)]
+      (is (= :created
+             (#'admin/retry-while-topic-pending-deletion! operation 1000 0)))
+      (is (= 3 @attempts)))))
 
 (deftest test-admin-config-creation
   (testing "Admin configuration creation"
