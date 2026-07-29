@@ -67,7 +67,16 @@ jobs:
 
       - name: lein test
         if: steps.version.outputs.changed == 'true'
-        run: lein test
+        run: lein test :default
+
+      - name: Verify Clojars credentials are configured
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          if [ -z "${{ secrets.CLOJARS_USERNAME }}" ] || [ -z "${{ secrets.CLOJARS_PASSWORD }}" ]; then
+            echo "::error::CLOJARS_USERNAME and/or CLOJARS_PASSWORD repo secrets are not set."
+            echo "Generate a deploy token at https://clojars.org/tokens and set it as CLOJARS_PASSWORD (not your account password)."
+            exit 1
+          fi
 
       - name: Deploy to Clojars
         if: steps.version.outputs.changed == 'true'
