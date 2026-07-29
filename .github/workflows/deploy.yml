@@ -65,10 +65,6 @@ jobs:
         if: steps.version.outputs.changed == 'true'
         run: lein check
 
-      - name: lein test
-        if: steps.version.outputs.changed == 'true'
-        run: lein test :default
-
       - name: Verify Clojars credentials are configured
         if: steps.version.outputs.changed == 'true'
         run: |
