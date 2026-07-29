@@ -179,7 +179,7 @@ The basic wrapper is now implemented with:
 Future enhancements:
 
 - Schema Registry support
-- Kafka Streams wrapper
+- ✅ Kafka Streams wrapper
 - Administrative operations
 - Metrics integration
 - Transaction support

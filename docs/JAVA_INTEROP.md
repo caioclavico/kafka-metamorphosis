@@ -9,6 +9,9 @@ consume with zero knowledge of Clojure.
 > `gen-class` namespaces, plus a handful of plain Java POJOs / interfaces.
 > No `clojure.java.api.Clojure` and no `IFn.invoke` ever appear in user
 > code.
+>
+> See the Kafka Streams section in the main `README.md` for an example
+> Java Streams usage pattern.
 
 ---
 
@@ -83,6 +86,48 @@ try (KafkaAdminWrapper admin = new KafkaAdminWrapper()) {
 
 All wrappers implement `AutoCloseable`, so `try-with-resources` is the
 canonical lifecycle pattern.
+
+---
+
+## Kafka Streams Java Interop
+
+The library also exposes Kafka Streams support through a Java-facing wrapper
+under `io.github.caioclavico.kafkametamorphosis.KafkaStreamsWrapper`.
+This wrapper delegates to Clojure stream helpers while providing a standard
+Java API.
+
+```java
+import io.github.caioclavico.kafkametamorphosis.KafkaStreamsWrapper;
+import java.util.Map;
+import java.util.function.Function;
+
+public class StreamsApp {
+    public static void main(String[] args) {
+        Map<String, Object> config = Map.of(
+            "application.id", "my-streams-app",
+            "bootstrap.servers", "localhost:9092"
+        );
+
+        try (KafkaStreamsWrapper wrapper = new KafkaStreamsWrapper(config)) {
+            Object builder = wrapper.createBuilder();
+            Object input = wrapper.stream(builder, "input-topic");
+
+            Function<Object, Object> mapper = value -> value + "-processed";
+            Object mapped = wrapper.mapValues(input, mapper);
+            wrapper.to(mapped, "output-topic");
+
+            Object streams = wrapper.createKafkaStreams(builder, config);
+            wrapper.start();
+            System.out.println("Streams state: " + wrapper.state());
+        }
+    }
+}
+```
+
+This wrapper is intended for Java applications that want a thin bridge to the
+Kafka Streams pipeline built by the Clojure helper layer. It preserves the
+Java lifecycle model while reusing the library's internal stream-building
+logic.
 
 ---
 

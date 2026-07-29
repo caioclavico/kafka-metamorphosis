@@ -11,6 +11,15 @@ _"When Gregor Samsa woke up one morning from unsettling dreams, he found himself
 
 Kafka Metamorphosis is a comprehensive Clojure wrapper that transforms the Java Kafka APIs into an elegant, idiomatic Clojure interface. Just as Gregor Samsa underwent his transformation, this library metamorphoses complex Java APIs into simple, functional Clojure code that feels natural and powerful.
 
+## Quick Navigation
+
+- [Features](#features)
+- [Installation](#installation)
+- [Documentation](#documentation)
+- [Quick Start](#quick-start)
+- [Kafka Streams](#kafka-streams)
+- [Kafka Streams Java Interop](#kafka-streams-java-interop)
+
 ## Features
 
 - 🪲 **Idiomatic Clojure API** - Clean, functional interface over Kafka's Java driver
@@ -46,7 +55,14 @@ clj -Sdeps '{:deps {org.clojars.caioclavico/kafka-metamorphosis {:mvn/version "0
 
 ## Documentation
 
-📚 **Detailed Guides:**
+� **Quick links:**
+- [Kafka Streams](#kafka-streams)
+- [Kafka Streams Java Interop](#kafka-streams-java-interop)
+- [Java Interop Guide](docs/JAVA_INTEROP.md)
+- [Docker Setup Guide](docs/DOCKER_SETUP.md)
+- [KRaft Mode Guide](docs/KRAFT_MODE.md)
+
+�📚 **Detailed Guides:**
 - [🐳 Docker Setup Guide](docs/DOCKER_SETUP.md) - Complete Docker development environment setup
 - [🆕 KRaft Mode Guide](docs/KRAFT_MODE.md) - Modern Kafka without Zookeeper 
 - [📋 Topic Creation Guide](docs/TOPIC_CREATION.md) - Comprehensive topic management
@@ -434,7 +450,7 @@ For more details, see the [☕ Java Interop Guide](docs/JAVA_INTEROP.md).
 - [x] ✅ **Docker Development Environment**
 - [x] ✅ **KRaft Mode Support**
 - [x] ✅ **Health Checks and Monitoring**
-- [ ] 🔄 **Kafka Streams Wrapper**
+- [x] ✅ **Kafka Streams Wrapper**
 - [ ] 🔄 **Transaction Support**
 - [ ] 🔄 **Metrics Integration**
 - [ ] 🔄 **Schema Evolution Support**
@@ -451,9 +467,73 @@ kafka-metamorphosis/
 ├── producer       # Producer operations and configuration  
 ├── consumer       # Consumer operations and configuration
 ├── admin          # Administrative operations
+├── streams        # Kafka Streams wrapper
 ├── serializers    # Serialization/deserialization configs
 └── dev            # Development utilities and Docker setup
 ```
+
+## Kafka Streams
+
+Use the `kafka-metamorphosis.streams` namespace to build and start a Kafka Streams pipeline in a few steps.
+
+```clojure
+(require '[kafka-metamorphosis.streams :as streams])
+
+(let [config  (streams/streams-config "my-streams-app")
+      builder (streams/create-builder)
+      input   (streams/stream builder "input-topic")
+      mapped  (streams/map-values input (fn [value]
+                                         (str value "-processed")))
+      _       (streams/to mapped "output-topic")
+      kafka-streams (streams/create-from-builder builder config)]
+  (streams/start! kafka-streams)
+  (println "Streams state:" (streams/state kafka-streams)))
+```
+
+Additional helpers:
+
+- `streams/filter-stream` — filter messages by `[key value]` predicate.
+- `streams/branch` — split a `KStream` into multiple streams using predicates.
+- `streams/clean-up!` — clear local state stores.
+- `streams/close!` — stop the stream application.
+
+## Kafka Streams Java Interop
+
+The Java wrapper emits `io.github.caioclavico.kafkametamorphosis.KafkaStreamsWrapper`.
+
+```java
+import io.github.caioclavico.kafkametamorphosis.KafkaStreamsWrapper;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+
+public class StreamsApp {
+    public static void main(String[] args) {
+        Map<String, Object> config = Map.of(
+            "application.id", "my-streams-app",
+            "bootstrap.servers", "localhost:9092"
+        );
+
+        try (KafkaStreamsWrapper wrapper = new KafkaStreamsWrapper(config)) {
+            Object builder = wrapper.createBuilder();
+            Object input = wrapper.stream(builder, "input-topic");
+
+            Function<Object, Object> mapper = value -> value + "-processed";
+            Object mapped = wrapper.mapValues(input, mapper);
+            wrapper.to(mapped, "output-topic");
+
+            Object streams = wrapper.createKafkaStreams(builder, config);
+            wrapper.start();
+            System.out.println("Streams state: " + wrapper.state());
+        }
+    }
+}
+```
+
+> Note: the Java wrapper is designed to interoperate with the Clojure streams helpers and can be used from Java applications as a bridge to the Kafka Streams API.
+>
+> See [docs/JAVA_INTEROP.md](docs/JAVA_INTEROP.md) for more Java interop examples.
 
 ### Design Philosophy
 

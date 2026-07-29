@@ -1,4 +1,4 @@
-(defproject org.clojars.caioclavico/kafka-metamorphosis "0.4.3"
+(defproject org.clojars.caioclavico/kafka-metamorphosis "0.4.4"
   :description "A comprehensive Clojure wrapper that transforms the Java Kafka APIs into an elegant, idiomatic Clojure interface"
   :url "https://github.com/caioclavico/kafka-metamorphosis"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
@@ -26,6 +26,7 @@
   
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.apache.kafka/kafka-clients "4.3.0"]
+                 [org.apache.kafka/kafka-streams "4.3.0"]
                  [org.clojure/data.json "2.4.0"]
                  ;; SLF4J facade — picks up whatever backend the consuming
                  ;; Java/Spring Boot app provides (logback, log4j2, …).
@@ -46,7 +47,8 @@
   :aot [kafka-metamorphosis.core
         kafka-metamorphosis.java.kafka-producer-wrapper
         kafka-metamorphosis.java.kafka-consumer-wrapper
-        kafka-metamorphosis.java.kafka-admin-wrapper]
+        kafka-metamorphosis.java.kafka-admin-wrapper
+        kafka-metamorphosis.java.kafka-streams-wrapper]
 
   :profiles {:uberjar {:aot :all
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}
