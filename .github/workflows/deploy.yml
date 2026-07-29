@@ -42,7 +42,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: maven
 
       - name: Install Leiningen
         if: steps.version.outputs.changed == 'true'

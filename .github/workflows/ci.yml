@@ -24,7 +24,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
-          cache: maven
 
       - name: Install Leiningen
         uses: DeLaGuardo/setup-clojure@13.0
