@@ -16,6 +16,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: clojars
     steps:
       - uses: actions/checkout@v4
         with:
