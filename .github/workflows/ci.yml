@@ -5,33 +5,45 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        java-version: [11, 21]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: ${{ matrix.java-version }}
+          cache: maven
 
       - name: Install Leiningen
         uses: DeLaGuardo/setup-clojure@13.0
         with:
           lein: latest
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven and Leiningen state
         uses: actions/cache@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('project.clj') }}
-          restore-keys: ${{ runner.os }}-m2-
+          path: |
+            ~/.m2
+            ~/.lein
+          key: ${{ runner.os }}-lein-${{ matrix.java-version }}-${{ hashFiles('project.clj') }}
+          restore-keys: |
+            ${{ runner.os }}-lein-${{ matrix.java-version }}-
+            ${{ runner.os }}-lein-
 
       - name: lein check
         run: lein check
 
-      - name: lein test (unit tests only — no Kafka broker available in CI)
-        run: lein test :unit || lein test
+      - name: lein test
+        run: lein test
