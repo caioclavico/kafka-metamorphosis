@@ -18,7 +18,7 @@ jobs:
       cancel-in-progress: true
     strategy:
       matrix:
-        java-version: [11, 21]
+        java-version: [21]
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +51,7 @@ jobs:
         run: lein test :default
 
   integration-tests:
+    name: Run integration tests
     needs: build-java
     runs-on: ubuntu-latest
     services:
