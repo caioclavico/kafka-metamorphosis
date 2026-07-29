@@ -3,7 +3,7 @@ version: '3.8'
 # Kafka 4.x runs in KRaft mode (ZooKeeper was removed in Kafka 4.0).
 services:
   kafka-kraft:
-    image: bitnami/kafka:4.3
+    image: soldevelo/kafka:4.3
     container_name: kafka-metamorphosis-kraft
     ports:
       - "9092:9092"
