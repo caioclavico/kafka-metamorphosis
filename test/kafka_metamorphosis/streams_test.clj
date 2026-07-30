@@ -22,6 +22,72 @@
       (is mapped)
       (is filtered))))
 
+(deftest test-table-and-global-table
+  (testing "table and global-table creation"
+    (let [builder (streams/create-builder)
+          ktable (streams/table builder "input-table-topic")
+          named-table (streams/table builder "named-topic" {:store "named-store"})
+          gtable (streams/global-table builder "global-topic")]
+      (is ktable)
+      (is named-table)
+      (is gtable))))
+
+(deftest test-map-kv-and-flat-map-kv
+  (testing "map-kv and flat-map-kv transformations"
+    (let [builder (streams/create-builder)
+          stream (streams/stream builder "input-topic")
+          mapped (streams/map-kv stream (fn [k v] [k (str v "!")]))
+          flat-mapped (streams/flat-map-kv stream (fn [k v] [[k v] [k (str v "-dup")]]))]
+      (is mapped)
+      (is flat-mapped))))
+
+(deftest test-grouping-and-windowing
+  (testing "group, group-by-key and window"
+    (let [builder (streams/create-builder)
+          stream (streams/stream builder "input-topic")
+          grouped (streams/group stream)
+          grouped-by (streams/group-by-key stream (fn [k v] v))
+          windowed (streams/window grouped 60000)]
+      (is grouped)
+      (is grouped-by)
+      (is windowed))))
+
+(deftest test-aggregations
+  (testing "count-values, reduce-values and aggregate"
+    (let [builder (streams/create-builder)
+          stream (streams/stream builder "input-topic")
+          grouped (streams/group stream)
+          counted (streams/count-values grouped)
+          named-counted (streams/count-values (streams/group stream) "count-store")
+          reduced (streams/reduce-values grouped (fn [agg value] (str agg value)))
+          aggregated (streams/aggregate grouped (constantly 0) (fn [k v agg] (+ agg 1)))]
+      (is counted)
+      (is named-counted)
+      (is reduced)
+      (is aggregated))))
+
+(deftest test-joins
+  (testing "join and left-join"
+    (let [builder (streams/create-builder)
+          stream (streams/stream builder "input-topic")
+          ktable (streams/table builder "table-topic")
+          joined (streams/join stream ktable (fn [v1 v2] (str v1 v2)))
+          left-joined (streams/left-join stream ktable (fn [v1 v2] (str v1 v2)))]
+      (is joined)
+      (is left-joined))))
+
+(deftest test-full-topology-builds
+  (testing "a topology exercising the new API builds without error"
+    (let [builder (streams/create-builder)
+          stream (streams/stream builder "input-topic")
+          ktable (streams/table builder "table-topic")
+          joined (streams/join stream ktable (fn [v1 v2] (str v1 v2)))
+          grouped (streams/group joined)
+          counted (streams/count-values grouped "final-store")
+          topology (streams/build-topology builder)]
+      (is topology)
+      (is (.describe topology)))))
+
 (deftest test-create-from-builder
   (testing "create KafkaStreams from builder"
     (let [builder (streams/create-builder)
