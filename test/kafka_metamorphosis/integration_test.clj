@@ -6,7 +6,8 @@
             [kafka-metamorphosis.consumer :as consumer]
             [kafka-metamorphosis.admin :as admin]
             [kafka-metamorphosis.schema :as schema]
-            [kafka-metamorphosis.serializers :as serializers])
+            [kafka-metamorphosis.serializers :as serializers]
+            [kafka-metamorphosis.streams :as streams])
   (:import [java.util.concurrent TimeUnit]))
 
 ;; =============================================================================
@@ -442,6 +443,60 @@
         (finally
           (consumer/close! consumer)
           (cleanup-test-environment!))))))
+
+(deftest-integration test-streams-topology-map-values
+  (testing "Kafka Streams topology uppercases values from an input topic to an output topic"
+    (let [input-topic "streams-integration-input"
+          output-topic "streams-integration-output"
+          setup-admin (admin/create-admin-client {:bootstrap-servers "localhost:9092"})]
+      (try
+        (admin/create-topic-if-not-exists! setup-admin input-topic {:partitions 1 :replication-factor 1})
+        (admin/create-topic-if-not-exists! setup-admin output-topic {:partitions 1 :replication-factor 1})
+        (Thread/sleep 1000)
+        (finally
+          (admin/close! setup-admin)))
+
+      (let [builder (streams/create-builder)
+            _ (-> (streams/stream builder input-topic)
+                  (streams/map-values clojure.string/upper-case)
+                  (streams/to output-topic))
+            topology (streams/build-topology builder)
+            kstreams (streams/create topology (streams/streams-config (fresh-group-id "streams-app")))
+            producer (producer/create {:bootstrap-servers "localhost:9092"
+                                        :key-serializer "org.apache.kafka.common.serialization.StringSerializer"
+                                        :value-serializer "org.apache.kafka.common.serialization.StringSerializer"})
+            consumer (consumer/create {:bootstrap-servers "localhost:9092"
+                                        :group-id (fresh-group-id "streams-consumer")
+                                        :key-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
+                                        :value-deserializer "org.apache.kafka.common.serialization.StringDeserializer"
+                                        :auto-offset-reset "earliest"})]
+        (try
+          (streams/start! kstreams)
+          (Thread/sleep 3000) ;; give the streams app time to start and join
+
+          (dotimes [i 3]
+            (producer/send! producer input-topic (str "key-" i) (str "value-" i)))
+          (producer/flush! producer)
+
+          (consumer/subscribe! consumer [output-topic])
+          (Thread/sleep 1000)
+
+          (let [records (consume-until consumer 15000 3)
+                messages (set (map :value records))]
+            (is (= 3 (count records)) "Should receive 3 transformed messages")
+            (is (= #{"VALUE-0" "VALUE-1" "VALUE-2"} messages) "Values should be upper-cased by the topology"))
+
+          (finally
+            (consumer/close! consumer)
+            (producer/close! producer)
+            (streams/close! kstreams 10000)
+            (let [cleanup-admin (admin/create-admin-client {:bootstrap-servers "localhost:9092"})]
+              (try
+                (doseq [topic [input-topic output-topic]]
+                  (when (admin/topic-exists? cleanup-admin topic)
+                    (admin/delete-topic! cleanup-admin topic)))
+                (finally
+                  (admin/close! cleanup-admin))))))))))
 
 ;; =============================================================================
 ;; Test Runner

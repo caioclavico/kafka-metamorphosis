@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file. This change
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-07-30
+### Added
+- Kafka Streams DSL: `table`, `global-table`, `map-kv`, `flat-map-kv`, `group`, `group-by-key`, `window`, `count-values`, `reduce-values`, `aggregate`, `join`, `left-join`, `query`, and `stop!`.
+- Integration test covering a full Kafka Streams topology (input topic -> map-values -> output topic).
+
 ## [0.4.8] - 2026-07-29
 
 ## [0.4.7] - 2026-07-29
